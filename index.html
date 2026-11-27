@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#05080d">
+  <title>Marvel Mission Control</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    /* Use the saved theme before the page draws (no flash). Dark is the default;
+       the toggle button in the top bar is in js/app.js ("initThemeToggle"). */
+    try { if (localStorage.getItem("marvel-tracker:theme") === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}
+  </script>
+</head>
+<body>
+
+  <!--
+    EASY GUIDE TO THIS PAGE
+    Each part below can be deleted if you do not want it. The code in
+    js/app.js skips anything that is missing, so nothing will break.
+      TOP BAR      logo + menu tabs + light/dark button
+      TOOLBAR      search box + "Watch order" menu
+      FOOTER       small credit line
+    To change what the home page says, open js/app.js and search for:
+      My Marvel Tracker
+    To change movies / TV shows, edit the files in the js folder:
+      data-movies.js, data-movies-xmen.js, data-tv.js
+      data-characters.js, data-phases.js, data-guides.js
+      data-featured.js = which titles rotate in the home page banner
+      (each has a QUICK GUIDE at the top)
+  -->
+
+  <!-- ===== TOP BAR: logo and menu tabs ===== -->
+
+  <header class="topbar">
+    <a class="brand" href="#/dashboard" aria-label="Marvel Mission Control, home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text">
+        <span class="brand-name">Marvel Mission Control</span>
+        <span class="brand-tag">Watch tracker</span>
+      </span>
+    </a>
+
+    <!-- Menu tabs. To hide one, delete its <a ...> line. Keep the Dashboard
+         one: it is the home page. -->
+    <nav class="tabs" aria-label="Sections">
+      <a class="tab" href="#/dashboard" data-route="dashboard">Dashboard</a>
+      <a class="tab" href="#/movies" data-route="movies">Movies <span class="tab-count" id="tab-count-movies"></span></a>
+      <a class="tab" href="#/tv" data-route="tv">TV Shows <span class="tab-count" id="tab-count-tv"></span></a>
+      <a class="tab" href="#/characters" data-route="characters">Characters</a>
+      <a class="tab" href="#/phases" data-route="phases">Phases</a>
+      <a class="tab" href="#/guides" data-route="guides">Guides</a>
+      <a class="tab" href="#/timeline" data-route="timeline">Timeline</a>
+      <a class="tab" href="#/stats" data-route="stats">Stats</a>
+      <a class="tab" href="#/search" data-route="search">Search</a>
+    </nav>
+
+    <!-- Light / dark theme button (see "initThemeToggle" in js/app.js) -->
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to light theme" title="Switch to light theme">
+      <span class="theme-toggle-icon" aria-hidden="true">&#9728;</span>
+    </button>
+  </header>
+
+  <!-- ===== TOOLBAR: search box and watch order menu =====
+       Delete the whole block below (until the line "END TOOLBAR") to remove both,
+       or delete just the <div class="search-box"> part or the
+       <div class="order-picker"> part. -->
+  <div class="toolbar">
+    <div class="search-box">
+      <label class="search-label" for="global-search">Search</label>
+      <div class="search-input-wrap">
+        <input type="search" id="global-search" class="search-input"
+               placeholder="Search movies, shows, seasons, episodes"
+               autocomplete="off" spellcheck="false">
+        <span class="search-icon" aria-hidden="true">&#128269;</span>
+      </div>
+    </div>
+    <div class="order-picker">
+      <label class="order-label" for="watch-order">Watch order</label>
+      <select id="watch-order" class="order-select"></select>
+    </div>
+  </div>
+  <!-- END TOOLBAR -->
+  <p class="sr-only" id="order-status" role="status" aria-live="polite"></p>
+
+  <!-- ===== MAIN AREA: every page is drawn here by js/app.js. Do not delete. ===== -->
+  <main id="app" class="app" tabindex="-1">
+    <noscript><p class="notice">Mission Control needs JavaScript turned on to run.</p></noscript>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <span>Personal project. Posters belong to Marvel and Disney and are used locally only.</span>
+  </footer>
+
+  <!-- ===== SCRIPTS: the order matters, keep it.
+       js/data-*.js  = the movies and shows (edit these to add or remove titles)
+       js/check-data.js = optional: warns in the Console if a data file has a mistake
+       js/app.js     = draws all the pages
+       data-characters.js, data-phases.js, data-guides.js = the Characters, Phases and Guides pages
+       To remove all X-Men movies, delete the data-movies-xmen.js line. -->
+  <script src="js/data-movies.js"></script>
+  <script src="js/data-movies-xmen.js"></script>
+  <script src="js/data-tv.js"></script>
+  <script src="js/data-characters.js"></script>
+  <script src="js/data-phases.js"></script>
+  <script src="js/data-guides.js"></script>
+  <script src="js/data-featured.js"></script>
+  <script src="js/check-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
