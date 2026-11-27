@@ -2,7 +2,7 @@
  * ============================================================================
  *  Marvel Mission Control: draws every page.
  *  You do NOT need to edit this file to add or remove a movie or show.
- *  Edit js/data-movies.js, js/data-movies-xmen.js or js/data-tv.js instead
+ *  Edit js/data-movies.js, js/data-movies-xmen.js, js/data-movies-sony.js, js/data-movies-other.js or js/data-tv.js instead
  *  (see README.md).
  *
  *  WHERE THINGS ARE (Ctrl+F the words in quotes):
@@ -30,9 +30,11 @@
 
   /* ================================================================= DATA */
 
-  var ALL_MOVIES = (window.MCU_MOVIES || []).concat(window.XMEN_MOVIES || []);
+  var ALL_MOVIES = (window.MCU_MOVIES || []).concat(window.XMEN_MOVIES || [], window.SONY_MOVIES || [], window.OTHER_MOVIES || []);
   var MOVIES = ALL_MOVIES.filter(function (m) { return m.universe === "mcu"; });
   var XMOVIES = ALL_MOVIES.filter(function (m) { return m.universe === "X-Men"; });
+  var SMOVIES = ALL_MOVIES.filter(function (m) { return m.universe === "sony"; });
+  var OMOVIES = ALL_MOVIES.filter(function (m) { return m.universe === "other"; });
   var TV = window.MCU_TV || [];
 
   var app = document.getElementById("app");
@@ -84,6 +86,19 @@
     return XMOVIES.slice().sort(function (a, b) { return compare(a, b, field); });
   }
 
+  /* Sony Spider-Man movies in the chosen order. */
+  function ssequence() {
+    var field = orderDef(watchOrder).field;
+    return SMOVIES.slice().sort(function (a, b) { return compare(a, b, field); });
+  }
+
+  /* "Other Marvel movies" in the chosen order. */
+  function osequence() {
+    var field = orderDef(watchOrder).field;
+    return OMOVIES.slice().sort(function (a, b) { return compare(a, b, field); });
+  }
+
+  var SONY_ERAS = { 1: "Raimi Trilogy", 2: "The Amazing Spider-Man", 3: "Sony\u2019s Spider-Man Universe", 4: "Spider-Verse" };
   var XMEN_ERAS = { 1: "Original Trilogy", 2: "Wolverine Solo Films", 3: "First Class Prequels", 4: "Deadpool & Modern Era" };
 
   /* ============================================================== HELPERS */
@@ -219,7 +234,7 @@
   /* Finds what an id in a "watchBefore" list points at: a movie, a TV show or one season. */
   function findTarget(id) {
     var m = ALL_MOVIES.filter(function (x) { return x.id === id; })[0];
-    if (m) return { kind: "movie", rec: m, title: m.title, group: m.universe === "X-Men" ? 1 : 0,
+    if (m) return { kind: "movie", rec: m, title: m.title, group: m.universe === "X-Men" ? 1 : m.universe === "sony" ? 2 : m.universe === "other" ? 3 : 0,
                     order: function (f) { return m[f]; } };
     var sh = TV.filter(function (x) { return x.id === id; })[0];
     if (sh) return { kind: "show", show: sh, title: sh.title, group: 0,
@@ -343,7 +358,7 @@
 
   /* Previous / next movie in the current watch order: MCU stays in MCU, X-Men in X-Men. */
   function neighbours(m) {
-    var list = m.universe === "X-Men" ? xsequence() : sequence("movie").map(function (u) { return u.movie; });
+    var list = m.universe === "X-Men" ? xsequence() : m.universe === "sony" ? ssequence() : m.universe === "other" ? osequence() : sequence("movie").map(function (u) { return u.movie; });
     var i = list.indexOf(m);
     return { prev: i > 0 ? list[i - 1] : null, next: i >= 0 && i < list.length - 1 ? list[i + 1] : null };
   }
@@ -395,7 +410,7 @@
     modal.titleEl.textContent = m.title;
     modal.metaList.replaceChildren(
       metaRow("Release date", fmtDate(m.releaseDate)),
-      metaRow("Phase", "Phase " + m.phase),
+      m.universe === "other" ? metaRow("Group", m.group || "Other Marvel films") : metaRow("Phase", "Phase " + m.phase),
       metaRow("Universe", m.universe.toUpperCase()),
       metaRow("Importance", capitalize(m.importance)));
     modal.descEl.textContent = m.description;
@@ -487,7 +502,7 @@
       addPeek(posterBlock(m), m.description),
       h("span", { class: "meta" },
         h("span", { class: "title" }, m.title),
-        h("span", { class: "sub" }, withPhase ? "Phase " + m.phase + " \u00b7 " + year(m.releaseDate) : year(m.releaseDate)),
+        h("span", { class: "sub" }, withPhase && m.universe !== "other" ? "Phase " + m.phase + " \u00b7 " + year(m.releaseDate) : year(m.releaseDate)),
         importanceTag(m)));
     card.addEventListener("click", function () { openMovieModal(m, card); });
     return card;
@@ -638,9 +653,15 @@
       /* X-Men "phases" are story eras, not MCU phases, so X-Men movies are hidden while a phase is picked. */
       var xmovies = phaseOn ? [] : xsequence().filter(importanceOk);
 
+      var smovies = phaseOn ? [] : ssequence().filter(importanceOk);
+
+      var omovies = phaseOn ? [] : osequence().filter(importanceOk);
+
       if (yearSorted) {
+        omovies = sortByYear(omovies, movieFilter.sort);
         movies = sortByYear(movies, movieFilter.sort);
         xmovies = sortByYear(xmovies, movieFilter.sort);
+        smovies = sortByYear(smovies, movieFilter.sort);
       }
 
       function grid(list, withPhase) {
@@ -665,37 +686,67 @@
         });
       }
 
-      /* X-Men sections */
-      var xSections = [];
-      if (xmovies.length) {
+      /* Sections for one group (X-Men or Sony): by year, chronological, or by era. */
+      function groupSections(list, name, title, eras, chronoNote) {
+        if (!list.length) return [];
+        var out;
         if (yearSorted) {
-          xSections = [h("section", { class: "phase" },
-            sectionHeader("X-Men \u2014 " + (movieFilter.sort === "newest" ? "Newest first" : "Oldest first"), "Sorted by release year", plural(xmovies.length, "movie", "movies")),
-            grid(xmovies, true))];
+          out = [h("section", { class: "phase" },
+            sectionHeader(name + " \u2014 " + (movieFilter.sort === "newest" ? "Newest first" : "Oldest first"), "Sorted by release year", plural(list.length, "movie", "movies")),
+            grid(list, true))];
         } else if (chrono) {
-          xSections = [h("section", { class: "phase" },
-            sectionHeader("X-Men \u2014 Chronological order", "In-universe story order across both timelines", plural(xmovies.length, "movie", "movies")),
-            grid(xmovies, true))];
+          out = [h("section", { class: "phase" },
+            sectionHeader(name + " \u2014 Chronological order", chronoNote, plural(list.length, "movie", "movies")),
+            grid(list, true))];
         } else {
-          xSections = groupByPhase(xmovies.map(function (m) { return { m: m, phase: m.phase }; })).map(function (g) {
+          out = groupByPhase(list.map(function (m) { return { m: m, phase: m.phase }; })).map(function (g) {
             return h("section", { class: "phase" },
-              sectionHeader(XMEN_ERAS[g.phase] || "X-Men", "X-Men", plural(g.entries.length, "movie", "movies")),
+              sectionHeader(eras[g.phase] || name, name, plural(g.entries.length, "movie", "movies")),
               grid(g.entries.map(function (e) { return e.m; }), false));
           });
         }
-        xSections.unshift(h("h2", { class: "phase-title", style: "margin-top:12px" }, "X-Men Movies"));
+        out.unshift(h("h2", { class: "phase-title", style: "margin-top:12px" }, title));
+        return out;
       }
+      var xSections = groupSections(xmovies, "X-Men", "X-Men Movies", XMEN_ERAS, "In-universe story order across both timelines");
+      var sSections = groupSections(smovies, "Sony Spider-Man", "Sony Spider-Man Movies", SONY_ERAS, "Story order within Sony\u2019s Spider-Man films");
+
+      /* Other Marvel movies: one section per "group" (in the order groups first appear in the data file).
+         Year sort = one flat list. */
+      function otherSections(list) {
+        if (!list.length) return [];
+        var out;
+        if (yearSorted) {
+          out = [h("section", { class: "phase" },
+            sectionHeader("Other Marvel \u2014 " + (movieFilter.sort === "newest" ? "Newest first" : "Oldest first"), "Sorted by release year", plural(list.length, "movie", "movies")),
+            grid(list, true))];
+        } else {
+          var names = [];
+          OMOVIES.forEach(function (m) { var g = m.group || "Other Marvel films"; if (names.indexOf(g) === -1) names.push(g); });
+          out = names.map(function (g) {
+            var part = list.filter(function (m) { return (m.group || "Other Marvel films") === g; });
+            return part.length ? h("section", { class: "phase" },
+              sectionHeader(g, chrono ? "Story order" : "Release order", plural(part.length, "movie", "movies")),
+              grid(part, false)) : null;
+          }).filter(Boolean);
+        }
+        out.unshift(h("h2", { class: "phase-title", style: "margin-top:12px" }, "Other Marvel Movies"));
+        return out;
+      }
+      var oSections = otherSections(omovies);
 
       var stats = [[movies.length, "MCU movies"]];
       if (xmovies.length) stats.push([xmovies.length, "X-Men movies"]);
+      if (smovies.length) stats.push([smovies.length, "Sony Spider-Man movies"]);
+      if (omovies.length) stats.push([omovies.length, "Other Marvel movies"]);
 
-      var note = (phaseOn && XMOVIES.length)
-        ? h("p", { class: "filter-note" }, "Phases only apply to MCU movies, so X-Men movies are hidden while a phase is picked.") : null;
-      var nothing = (!movies.length && !xmovies.length)
+      var note = (phaseOn && (XMOVIES.length || SMOVIES.length || OMOVIES.length))
+        ? h("p", { class: "filter-note" }, "Phases only apply to MCU movies, so X-Men, Sony and Other Marvel movies are hidden while a phase is picked.") : null;
+      var nothing = (!movies.length && !xmovies.length && !smovies.length && !omovies.length)
         ? emptyBox("No movies match", "Try a different phase or importance button.") : null;
 
       /* note and nothing can be null; filter(Boolean) drops them so no "null" text is drawn */
-      results.replaceChildren.apply(results, [summaryBox("Movie totals", stats), note, nothing].concat(sections, xSections).filter(Boolean));
+      results.replaceChildren.apply(results, [summaryBox("Movie totals", stats), note, nothing].concat(sections, xSections, sSections, oSections).filter(Boolean));
     }
 
     /* Runs after any filter or sort button is clicked: update the buttons, then redraw the lists. */
@@ -968,6 +1019,8 @@
     var units = sequence();
     var movieCount = units.filter(function (u) { return u.kind === "movie"; }).length;
     var xmovies = xsequence();
+    var smovies = ssequence();
+    var omovies = osequence();
 
     app.replaceChildren(
       pageHead("Timeline"),
@@ -984,7 +1037,19 @@
         (chrono ? "Every X-Men movie in the order they happen in the X-Men story timeline. "
                 : "Every X-Men movie in the order they came out. ") +
         plural(xmovies.length, "movie", "movies") + ".") : null,
-      xmovies.length ? h("ol", { class: "tl-list" }, xmovies.map(function (m) { return timelineRow(m); })) : null);
+      xmovies.length ? h("ol", { class: "tl-list" }, xmovies.map(function (m) { return timelineRow(m); })) : null,
+      smovies.length ? h("h2", { class: "phase-title", style: "margin-top:36px" }, "Sony Spider-Man Timeline") : null,
+      smovies.length ? h("p", { class: "section-note" },
+        (chrono ? "Every Sony Spider-Man movie in story order. "
+                : "Every Sony Spider-Man movie in the order they came out. ") +
+        "These are not part of the main MCU timeline. " + plural(smovies.length, "movie", "movies") + ".") : null,
+      smovies.length ? h("ol", { class: "tl-list" }, smovies.map(function (m) { return timelineRow(m); })) : null,
+      omovies.length ? h("h2", { class: "phase-title", style: "margin-top:36px" }, "Other Marvel Timeline") : null,
+      omovies.length ? h("p", { class: "section-note" },
+        (chrono ? "Every other Marvel movie grouped by series, in story order. "
+                : "Every other Marvel movie in the order they came out. ") +
+        "These are not part of the main MCU timeline. " + plural(omovies.length, "movie", "movies") + ".") : null,
+      omovies.length ? h("ol", { class: "tl-list" }, omovies.map(function (m) { return timelineRow(m); })) : null);
   }
 
   /* ================================================================= SEARCH */
@@ -994,9 +1059,9 @@
   var searchPhase = "all";  // all | "1" | "2" ...
   var searchUI = null;      // handles to the search page while it is on screen
 
-  /* Every movie, X-Men movie and TV season as a searchable entry. */
+  /* Every movie, X-Men, Sony, Other Marvel movie and TV season as a searchable entry. */
   function searchEntries() {
-    var out = MOVIES.concat(XMOVIES).map(function (m) {
+    var out = MOVIES.concat(XMOVIES, SMOVIES, OMOVIES).map(function (m) {
       return { type: "movie", id: m.id, movie: m, phase: m.phase, text: m.title };
     });
     TV.forEach(function (s) {
@@ -1015,6 +1080,8 @@
     var rank = {};
     sequence().forEach(function (u, i) { rank[u.id] = i; });
     xsequence().forEach(function (m, i) { rank[m.id] = 1000 + i; });
+    ssequence().forEach(function (m, i) { rank[m.id] = 2000 + i; });
+    osequence().forEach(function (m, i) { rank[m.id] = 3000 + i; });
     return searchEntries().filter(function (e) {
       return (searchType === "all" || e.type === searchType) &&
              (searchPhase === "all" || String(e.phase) === searchPhase) &&
@@ -1345,7 +1412,7 @@
 
     function draw() {
       var both = statsUniverse === "all";
-      var movies = ALL_MOVIES.filter(function (m) { return both || m.universe === statsUniverse; });
+      var movies = ALL_MOVIES.filter(function (m) { return m.universe !== "sony" && m.universe !== "other" && (both || m.universe === statsUniverse); });
       function cls(m) { return m.universe === "X-Men" ? "seg-xmen" : "seg-mcu"; }
 
       /* --- runtime (only movies that have a runtime in the data count) --- */

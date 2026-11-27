@@ -6,7 +6,7 @@
  */
 (function () {
   "use strict";
-  var movies = (window.MCU_MOVIES || []).concat(window.XMEN_MOVIES || []);
+  var movies = (window.MCU_MOVIES || []).concat(window.XMEN_MOVIES || [], window.SONY_MOVIES || [], window.OTHER_MOVIES || []);
   var shows = window.MCU_TV || [];
   var problems = [];
   var seenId = {};
@@ -56,16 +56,22 @@
   });
 
   /* MCU movies and TV seasons share one set of order numbers. X-Men has its own. */
-  var mcu = movies.filter(function (m) { return m.universe !== "X-Men"; });
+  var mcu = movies.filter(function (m) { return m.universe !== "X-Men" && m.universe !== "sony" && m.universe !== "other"; });
+  var sony = movies.filter(function (m) { return m.universe === "sony"; });
   var xmen = movies.filter(function (m) { return m.universe === "X-Men"; });
   checkOrders(mcu.concat(seasons), "releaseOrder", "MCU + TV");
   checkOrders(mcu.concat(seasons), "chronologicalOrder", "MCU + TV");
   checkOrders(xmen, "releaseOrder", "X-Men");
   checkOrders(xmen, "chronologicalOrder", "X-Men");
+  checkOrders(sony, "releaseOrder", "Sony");
+  checkOrders(sony, "chronologicalOrder", "Sony");
+  var other = movies.filter(function (m) { return m.universe === "other"; });
+  checkOrders(other, "releaseOrder", "Other");
+  checkOrders(other, "chronologicalOrder", "Other");
 
   /* ---- "watchBefore" checks: ids must exist, and a title should not ask you to watch something later first ---- */
   var byId = {};
-  function scale(rec) { return rec.universe === "X-Men" ? "xmen" : "mcu"; }
+  function scale(rec) { return rec.universe === "X-Men" ? "xmen" : rec.universe === "sony" ? "sony" : rec.universe === "other" ? "other" : "mcu"; }
   movies.forEach(function (m) { byId[m.id] = { rec: m, scale: scale(m), release: m.releaseOrder, chronological: m.chronologicalOrder }; });
   shows.forEach(function (s) {
     var se = s.seasons || [];
@@ -90,7 +96,7 @@
         if (me && t.scale === me.scale && t.scale === "mcu" && t[key] >= me[key]) {
           problems.push("watchBefore on " + owner.id + " (" + key + " order): " + id + " comes later, not earlier");
         }
-        if (me && t.scale === "xmen" && me.scale === "xmen" && t[key] >= me[key]) {
+        if (me && t.scale !== "mcu" && t.scale === me.scale && t[key] >= me[key]) {
           problems.push("watchBefore on " + owner.id + " (" + key + " order): " + id + " comes later, not earlier");
         }
       });
