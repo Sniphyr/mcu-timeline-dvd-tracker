@@ -13,6 +13,8 @@ It lists every Marvel movie and TV show, with posters, dates, a timeline and sea
 | `index.html` | The page frame: top bar, search box, watch-order menu | Rarely |
 | `js/data-movies.js` | The MCU movies | **Yes, to add/remove MCU movies** |
 | `js/data-movies-xmen.js` | The X-Men movies | **Yes, to add/remove X-Men movies** |
+| `js/data-movies-sony.js` | The Sony Spider-Man movies (Raimi, Amazing, Venom/SSU, Spider-Verse) | **Yes, to add/remove Sony movies** |
+| `js/data-movies-other.js` | Other Marvel movies (Fantastic Four, Daredevil, Punisher, Blade, Hulk 2003, Marvel One-Shots...) | **Yes, to add/remove these movies** |
 | `js/data-tv.js` | The TV shows | **Yes, to add/remove shows** |
 | `js/data-characters.js` | The Characters page (name, description, appearances) | **Yes, to add/remove characters** |
 | `js/data-phases.js` | The story summary text for each phase | **Yes, to change the Phases page text** |
@@ -30,7 +32,7 @@ It lists every Marvel movie and TV show, with posters, dates, a timeline and sea
 
 ## ADD a movie
 
-1. Open `js/data-movies.js` (or `js/data-movies-xmen.js` for an X-Men movie).
+1. Open `js/data-movies.js` (or `js/data-movies-xmen.js` for an X-Men movie, `js/data-movies-sony.js` for a Sony Spider-Man movie, or `js/data-movies-other.js` for an Other Marvel movie).
 2. Scroll to the very bottom. You will see a line with just `];`.
 3. Paste this **just above** the `];` line:
 
@@ -56,7 +58,7 @@ It lists every Marvel movie and TV show, with posters, dates, a timeline and sea
 |---|---|
 | `id` | A short unique name: lowercase, dashes, no spaces. **Never reuse one.** |
 | `title` | The name shown on screen |
-| `universe` | Keep `"mcu"` in the MCU file. Keep `"X-Men"` in the X-Men file |
+| `universe` | Keep `"mcu"` in the MCU file. Keep `"X-Men"` in the X-Men file `"sony"` in the Sony file and `"other"` in the Other Marvel file |
 | `releaseDate` | `"YYYY-MM-DD"` |
 | `releaseOrder` | A number that decides its place in **Release Order**. No other title may use the same number. For a new, latest movie use a number bigger than all the others (like `9000`). To squeeze one in between two movies, pick a number between theirs (between 700 and 800 use `750`). A bigger number must also mean a later `releaseDate` |
 | `chronologicalOrder` | Same idea, but for the **story timeline** order |
@@ -65,7 +67,9 @@ It lists every Marvel movie and TV show, with posters, dates, a timeline and sea
 | `description` | One sentence |
 | `poster` | The path to the picture (see below) |
 
-5. **X-Men movies only:** also copy the `timelineBranch: "..."` line from another X-Men movie in that file.
+5. **Other Marvel movies:** copy a block from `js/data-movies-other.js`. They are not part of the main MCU timeline and have their own order numbers (so `releaseOrder` and `chronologicalOrder` must only be unique inside that file). Add `group: "Some Name"` to put the movie in a sub-section of the Movies page. Movies with the same text go together, and sections appear in the order the groups first show up in the file. No `group` = "Other Marvel films". A new group name just works, nothing else to edit. `phase` is only used by the data checker. They show on the Movies page (under Sony), Search and the Timeline (own block). Poster files go in `posters/movies/` and must be named `<id>.webp` (e.g. `blade-ii.webp`). One-shots use ids like `agent-carter-one-shot` because `agent-carter` is already the TV show.
+   **Sony Spider-Man movies:** copy a block from `js/data-movies-sony.js` (no `timelineBranch` needed). `phase` is a story group there: 1 Raimi, 2 Amazing Spider-Man, 3 Sony's Spider-Man Universe (Venom etc.), 4 Spider-Verse. They are not part of the main MCU timeline and have their own order numbers. They show on the Movies page (under X-Men), Search and the Timeline (own block). Poster files go in `posters/movies/` and must be named `<id>.webp` (e.g. `morbius.webp`).
+   **X-Men movies only:** also copy the `timelineBranch: "..."` line from another X-Men movie in that file.
 6. **Poster:** save the image into `posters/movies/` and make `poster:` match the file name exactly (`.webp`, `.jpg` and `.png` all work). No image? Skip it, the page shows a placeholder.
 7. Save and refresh the browser (F5). Done.
 
@@ -518,6 +522,10 @@ Tested at **390 px wide** (a normal phone) in a real browser: no sideways scroll
 ---
 
 ## Other jobs
+
+**Remove all Other Marvel movies:** in `index.html`, delete the line `<script src="js/data-movies-other.js"></script>`.
+
+**Remove all Sony Spider-Man movies:** in `index.html`, delete the line `<script src="js/data-movies-sony.js"></script>`.
 
 **Remove all X-Men movies:** in `index.html`, delete the line `<script src="js/data-movies-xmen.js"></script>`.
 
