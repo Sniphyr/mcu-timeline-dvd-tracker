@@ -980,7 +980,7 @@ body.modal-open { overflow: hidden; }
 .ep-desc { font-size: 0.86rem; line-height: 1.4; color: var(--text); opacity: 0.85; overflow-wrap: anywhere; }
 
 /* ==========================================================================
-   Batch 3: importance tags, Movies page filters, "Surprise me" buttons
+   Batch 3: importance tags, Movies page filters
    ========================================================================== */
 
 /* Importance tag under a card's title. One colour per level. */
@@ -1003,17 +1003,62 @@ body.modal-open { overflow: hidden; }
 .movie-filters { margin-bottom: 22px; }
 .filter-note { margin: 0 0 18px; font-size: 0.85rem; color: var(--muted); }
 
-/* Home page: the two "Surprise me" buttons reuse the .home-card look */
-.home-surprise { margin-top: 16px; }
-button.home-card-btn {
-  width: 100%;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
+/* ==========================================================================
+   Batch 12: "Roll the dice" panel (home page). Colours come from the theme
+   variables, so it follows the light / dark button too.
+   ========================================================================== */
+.roll-panel {
+  margin-top: 16px;
+  padding: 22px clamp(14px, 3vw, 28px) 20px;
+  text-align: center;
+  background: linear-gradient(160deg, rgba(var(--surface-rgb), 0.95), rgba(var(--void-rgb), 0.95));
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 0 26px rgba(var(--arc-rgb), 0.12), inset 0 0 40px rgba(var(--arc-rgb), 0.05);
 }
-.home-card-note { margin-left: auto; font-size: 0.85rem; color: var(--muted); }
-button.home-card-btn:focus-visible { outline: 2px solid var(--arc); outline-offset: 2px; }
+/* The dice with a slowly pulsing glow (switched off by "reduce motion") */
+.roll-dice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  font-size: 2.3rem;
+  border-radius: 50%;
+  background: rgba(var(--gold-rgb), 0.08);
+  border: 1px solid rgba(var(--gold-rgb), 0.55);
+  animation: roll-glow 2.4s ease-in-out infinite;
+}
+@keyframes roll-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(var(--gold-rgb), 0.25), 0 0 24px rgba(var(--gold-rgb), 0.12); }
+  50%      { box-shadow: 0 0 20px rgba(var(--gold-rgb), 0.6),  0 0 46px rgba(var(--gold-rgb), 0.3); }
+}
+.roll-title { margin: 12px 0 14px; font-family: var(--font-display); font-size: 1.3rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text); }
+.roll-chips { justify-content: center; margin-bottom: 18px; }
+.roll-chip:disabled { opacity: 0.35; cursor: not-allowed; }
+.roll-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.roll-btn {
+  padding: 18px 14px;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  background: linear-gradient(180deg, rgba(var(--arc-rgb), 0.16), rgba(var(--arc-rgb), 0.05));
+  border: 1px solid var(--arc);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.roll-btn:hover { box-shadow: 0 0 18px rgba(var(--arc-rgb), 0.45); transform: translateY(-1px); }
+.roll-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.roll-msg { min-height: 1.4em; margin: 14px 0 0; font-size: 0.9rem; color: var(--gold); }
+@media (max-width: 520px) { .roll-actions { grid-template-columns: 1fr; } }
+
+/* "Roll again" button at the top of the movie popup */
+.roll-again { margin-bottom: 10px; color: var(--gold); border-color: rgba(var(--gold-rgb), 0.6); background: rgba(var(--gold-rgb), 0.1); }
+.roll-again[hidden] { display: none; }
 
 /* ==========================================================================
    Batch 4: more tabs, Characters, Phases, Guides, Stats
@@ -1364,3 +1409,51 @@ html[data-theme="light"] {
   .modal-trailer-btn { align-self: center; }
   .modal-nav { position: sticky; bottom: calc(-18px - env(safe-area-inset-bottom, 0px)); margin: 0 -18px -18px; padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--hull); z-index: 3; align-items: center; }
 }
+
+
+/* ==========================================================================
+   Batch 11: "Explore" menu, phone tab fade, home tiles
+   ========================================================================== */
+
+/* Desktop: the tab bar must not clip the dropdown, and the phone-only tabs are hidden. */
+.tabs { position: relative; }
+.tab-phone { display: none; }
+.explore { position: relative; display: inline-flex; }
+button.explore-btn { font: inherit; font-family: var(--font-display); font-size: inherit; font-weight: 600; letter-spacing: 0.04em; border: 0; background: none; cursor: pointer; }
+.explore-btn.has-current, .explore-btn[aria-expanded="true"] { color: var(--arc); }
+.explore-btn.has-current {
+  background: rgba(var(--arc-rgb), 0.14);
+  box-shadow: inset 0 0 0 1px var(--arc), 0 0 14px rgba(var(--arc-rgb), 0.25);
+}
+.explore-btn:focus-visible, .explore-link:focus-visible { outline: 2px solid var(--arc); outline-offset: 2px; }
+.explore-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 20;
+  display: flex; flex-direction: column; min-width: 180px; padding: 6px;
+  background: var(--hull); border: 1px solid var(--line-strong); border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+.explore-menu[hidden] { display: none; }
+.explore-link { padding: 10px 14px; font-family: var(--font-display); font-weight: 600; letter-spacing: 0.04em; color: var(--muted); border-radius: 8px; }
+.explore-link:hover { color: var(--text); background: rgba(var(--arc-rgb), 0.1); }
+.explore-link[aria-current="page"] { color: var(--arc); background: rgba(var(--arc-rgb), 0.14); }
+@media (min-width: 1081px) { .tabs { overflow: visible; } }
+
+/* Phones and small tablets: all tabs in one swipeable row, no dropdown, faded right edge. */
+@media (max-width: 1080px) {
+  .tab-phone { display: inline-flex; }
+  .explore { display: none; }
+  .tabs {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+  }
+  .tabs.tabs-at-end { -webkit-mask-image: none; mask-image: none; }
+}
+
+/* Home page: four bigger tiles with a one-line description. */
+.home-tiles { grid-template-columns: repeat(2, 1fr); gap: 18px; }
+.home-tile { padding: 26px 24px; min-height: 120px; gap: 18px; }
+.home-tile .home-card-icon { width: 64px; height: 64px; font-size: 2rem; border-radius: 12px; }
+.home-tile-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.home-tile .home-card-title { font-size: 1.4rem; }
+.home-tile-desc { font-size: 0.92rem; color: var(--muted); line-height: 1.35; }
+@media (max-width: 640px) { .home-tiles { grid-template-columns: 1fr; } .home-tile { padding: 18px 18px; min-height: 96px; } }
