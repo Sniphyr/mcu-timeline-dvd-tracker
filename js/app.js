@@ -2,7 +2,7 @@
  * ============================================================================
  *  Marvel Mission Control: draws every page.
  *  You do NOT need to edit this file to add or remove a movie or show.
- *  Edit js/data-movies.js, js/data-movies-xmen.js, js/data-movies-sony.js, js/data-movies-other.js or js/data-tv.js instead
+ *  Edit js/data-movies.js, js/data-movies-xmen.js, js/data-movies-sony.js, js/data-movies-other.js, js/data-tv-other.js or js/data-tv.js instead
  *  (see README.md).
  *
  *  WHERE THINGS ARE (Ctrl+F the words in quotes):
@@ -13,7 +13,7 @@
  *    Home hero banner ...... "function renderHero"       (featured list: js/data-featured.js)
  *    Theme toggle .......... "function initThemeToggle"
  *    Swipe in the popup .... "function addSwipe"
- *    Surprise me buttons ... "function surpriseButtons"
+ *    Roll the dice panel ... "function rollPanel"  (chips: "ROLL_CHIPS")
  *    Characters page ....... "function renderCharacters"  (data: js/data-characters.js)
  *    Phases page ........... "function renderPhases"      (text: js/data-phases.js)
  *    Guides page ........... "function renderGuides"      (data: js/data-guides.js)
@@ -36,6 +36,8 @@
   var SMOVIES = ALL_MOVIES.filter(function (m) { return m.universe === "sony"; });
   var OMOVIES = ALL_MOVIES.filter(function (m) { return m.universe === "other"; });
   var TV = window.MCU_TV || [];
+  var OTV = window.MCU_TV_OTHER || [];   // "Other Marvel TV": no phases, not in UNITS / timeline
+  var ALLTV = TV.concat(OTV);
 
   var app = document.getElementById("app");
 
@@ -236,14 +238,16 @@
     var m = ALL_MOVIES.filter(function (x) { return x.id === id; })[0];
     if (m) return { kind: "movie", rec: m, title: m.title, group: m.universe === "X-Men" ? 1 : m.universe === "sony" ? 2 : m.universe === "other" ? 3 : 0,
                     order: function (f) { return m[f]; } };
-    var sh = TV.filter(function (x) { return x.id === id; })[0];
-    if (sh) return { kind: "show", show: sh, title: sh.title, group: 0,
-                     order: function (f) { return Math.min.apply(null, sh.seasons.map(function (se) { return se[f]; })); } };
-    for (var i = 0; i < TV.length; i++) {
-      for (var j = 0; j < TV[i].seasons.length; j++) {
-        var se = TV[i].seasons[j];
-        if (se.id === id) return { kind: "season", show: TV[i], season: se, title: TV[i].title + " Season " + se.season, group: 0,
-                                   order: function (f) { return se[f]; } };
+    /* Other Marvel TV has no order numbers, so its seasons sort by release date (and after everything else). */
+    function key(se, f) { return typeof se[f] === "number" ? se[f] : Number(se.releaseDate.replace(/-/g, "")); }
+    var sh = ALLTV.filter(function (x) { return x.id === id; })[0];
+    if (sh) return { kind: "show", show: sh, title: sh.title, group: OTV.indexOf(sh) !== -1 ? 4 : 0,
+                     order: function (f) { return Math.min.apply(null, sh.seasons.map(function (se) { return key(se, f); })); } };
+    for (var i = 0; i < ALLTV.length; i++) {
+      for (var j = 0; j < ALLTV[i].seasons.length; j++) {
+        var se = ALLTV[i].seasons[j];
+        if (se.id === id) return { kind: "season", show: ALLTV[i], season: se, title: ALLTV[i].title + " Season " + se.season, group: OTV.indexOf(ALLTV[i]) !== -1 ? 4 : 0,
+                                   order: function (f) { return key(se, f); } };
       }
     }
     return null;
@@ -313,12 +317,13 @@
     var extraEl = h("dl", { class: "modal-extra" });
     var watchEl = h("div", { class: "modal-watch", hidden: true });
     var relatedEl = h("div", { class: "modal-related" });
+    var rollBtn = h("button", { type: "button", class: "filter-btn roll-again", hidden: true }, "\uD83C\uDFB2 Roll again");
     var prevBtn = h("button", { type: "button", class: "modal-nav-btn" }, "\u2039 Previous");
     var nextBtn = h("button", { type: "button", class: "modal-nav-btn" }, "Next \u203A");
     var swipeHint = h("span", { class: "swipe-hint", "aria-hidden": "true" }, "\u2194 Swipe");
     var navEl = h("div", { class: "modal-nav" }, prevBtn, swipeHint, nextBtn);
     var panel = h("div", { class: "modal", role: "dialog", "aria-modal": "true", "aria-labelledby": "movie-modal-title" },
-      closeBtn, posterWrap, h("div", { class: "modal-body" }, titleEl, chipsEl, trailerEl, metaList, descEl, extraEl, watchEl, relatedEl), navEl);
+      closeBtn, posterWrap, h("div", { class: "modal-body" }, titleEl, rollBtn, chipsEl, trailerEl, metaList, descEl, extraEl, watchEl, relatedEl), navEl);
     var overlay = h("div", { class: "modal-overlay", hidden: true }, panel);
 
     function onKeydown(e) {
@@ -334,6 +339,11 @@
     }
     overlay.addEventListener("mousedown", function (e) { if (e.target === overlay) closeModal(); });
     closeBtn.addEventListener("click", closeModal);
+    /* "Roll again" (only shown when the popup was opened from the Roll the dice panel) */
+    rollBtn.addEventListener("click", function () {
+      var pick = rollPick("movie");
+      if (pick) { openMovieModal(pick, modalOpener, true); rollBtn.focus(); }
+    });
     prevBtn.addEventListener("click", function () { stepMovie(-1); });
     nextBtn.addEventListener("click", function () { stepMovie(1); });
     /* Swipe left = next movie, swipe right = previous movie (touch screens) */
@@ -341,7 +351,7 @@
     document.body.appendChild(overlay);
     return { overlay: overlay, posterWrap: posterWrap, titleEl: titleEl, chipsEl: chipsEl, trailerEl: trailerEl,
              metaList: metaList, descEl: descEl, extraEl: extraEl, watchEl: watchEl, relatedEl: relatedEl,
-             prevBtn: prevBtn, nextBtn: nextBtn, panel: panel, closeBtn: closeBtn, onKeydown: onKeydown };
+             prevBtn: prevBtn, nextBtn: nextBtn, rollBtn: rollBtn, panel: panel, closeBtn: closeBtn, onKeydown: onKeydown };
   }
 
   function metaRow(label, value) {
@@ -396,8 +406,10 @@
     modal.panel.classList.add(dir < 0 ? "slide-prev" : "slide-next");
   }
 
-  function openMovieModal(m, opener) {
+  /* fromRoll = true when it was opened by the Roll the dice panel: then the "Roll again" button shows. */
+  function openMovieModal(m, opener, fromRoll) {
     if (!modal) modal = buildModal();
+    modal.rollBtn.hidden = !fromRoll;
     modalOpener = opener || null;
     modalMovie = m;
     modal.panel.scrollTop = 0;
@@ -513,7 +525,7 @@
     var subs;
     if (season) {
       subs = [h("span", { class: "sub" }, "Season " + season.season),
-              h("span", { class: "sub" }, "Phase " + season.phase + " \u00b7 " + year(season.releaseDate))];
+              h("span", { class: "sub" }, season.phase !== undefined ? "Phase " + season.phase + " \u00b7 " + year(season.releaseDate) : year(season.releaseDate))];
     } else {
       var years = show.seasons.map(function (x) { return Number(year(x.releaseDate)); });
       var first = Math.min.apply(null, years), last = Math.max.apply(null, years);
@@ -531,10 +543,12 @@
 
   /* ============================================================== DASHBOARD */
 
-  function homeCard(href, icon, name) {
-    return h("a", { class: "home-card", href: href },
+  function homeCard(href, icon, name, desc) {
+    return h("a", { class: "home-card home-tile", href: href },
       h("span", { class: "home-card-icon", "aria-hidden": "true" }, icon),
-      h("span", { class: "home-card-title" }, name),
+      h("span", { class: "home-tile-text" },
+        h("span", { class: "home-card-title" }, name),
+        h("span", { class: "home-tile-desc" }, desc)),
       h("span", { class: "home-card-arrow", "aria-hidden": "true" }, "\u203a"));
   }
 
@@ -548,40 +562,192 @@
   }
 
   /*
-   * The two "Surprise me" buttons on the home page.
-   *   Movie button: opens the popup of a random movie (MCU and X-Men).
-   *     To use MCU movies only, change ALL_MOVIES to MOVIES below.
-   *   TV button: opens the page of a random TV show.
-   * A button is left out if there is nothing to pick from.
+   * ROLL THE DICE panel (home page). Two big buttons pick a random movie or TV show,
+   * and the mood chips above them narrow down what can be picked.
+   *   Movies come from ALL_MOVIES (MCU, X-Men, Sony, Other Marvel).
+   *   TV shows come from ALLTV (MCU + Other Marvel).
+   * To add a chip: add one line to ROLL_CHIPS below (key, label, the types it
+   * works for, and a test that says whether one title matches).
    */
-  function surpriseButtons() {
-    var buttons = [];
-    if (ALL_MOVIES.length) {
-      var movieBtn = h("button", { type: "button", class: "home-card home-card-btn", "aria-haspopup": "dialog" },
-        h("span", { class: "home-card-icon", "aria-hidden": "true" }, "\uD83C\uDFB2"),
-        h("span", { class: "home-card-title" }, "Surprise me"),
-        h("span", { class: "home-card-note" }, "random movie"));
-      movieBtn.addEventListener("click", function () { openMovieModal(randomPick("movie", ALL_MOVIES), movieBtn); });
-      buttons.push(movieBtn);
+  var ROLL_CHIPS = [
+    { key: "any",       label: "Any",               types: ["movie", "tv"], test: function () { return true; } },
+    { key: "essential", label: "Essential only",    types: ["movie", "tv"], test: function (x) { return x.importance === "essential"; } },
+    { key: "short",     label: "Under 2 hours",     types: ["movie"],       test: function (x) { return x.runtime > 0 && x.runtime < 120; } },
+    { key: "mcu",       label: "MCU only",          types: ["movie", "tv"], test: function (x, type) { return type === "movie" ? x.universe === "mcu" : TV.indexOf(x) !== -1; } },
+    { key: "xmen",      label: "X-Men only",        types: ["movie"],       test: function (x) { return x.universe === "X-Men"; } },
+    { key: "sony",      label: "Spider-Man/Sony only", types: ["movie"],    test: function (x) { return x.universe === "sony"; } },
+    { key: "other",     label: "Other Marvel only", types: ["movie", "tv"], test: function (x, type) { return type === "movie" ? x.universe === "other" : OTV.indexOf(x) !== -1; } },
+    { key: "ongoing",   label: "Ongoing only",      types: ["tv"],          test: function (x) { return String(x.status || "").trim().toLowerCase() === "ongoing"; } }
+  ];
+  var rollChip = "any";   // the chip that is switched on (kept while you move around the site)
+  var rollType = null;    // "movie" or "tv" = what was rolled last (null before the first roll)
+
+  function chipByKey(key) { return ROLL_CHIPS.filter(function (c) { return c.key === key; })[0]; }
+
+  /* All titles of this type that match the chip that is on. */
+  function rollList(type) {
+    var chip = chipByKey(rollChip);
+    return (type === "movie" ? ALL_MOVIES : ALLTV).filter(function (x) { return chip.test(x, type); });
+  }
+
+  /* Picks one of them (never the same as last time when there is a choice), or null if none match. */
+  function rollPick(type) {
+    var list = rollList(type);
+    return list.length ? randomPick(type, list) : null;
+  }
+
+  /* True when the person has "reduce motion" turned on: then there is no spin and no flip. */
+  function reducedMotion() {
+    return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+
+  /* Year of a movie, or of a show's first season (shows have no date of their own). */
+  function itemYear(x) {
+    var date = x.releaseDate;
+    if (!date && x.seasons) {
+      x.seasons.forEach(function (se) { if (se.releaseDate && (!date || se.releaseDate < date)) date = se.releaseDate; });
     }
-    if (TV.length) {
-      var tvBtn = h("button", { type: "button", class: "home-card home-card-btn" },
-        h("span", { class: "home-card-icon", "aria-hidden": "true" }, "\uD83C\uDFB2"),
-        h("span", { class: "home-card-title" }, "Surprise me"),
-        h("span", { class: "home-card-note" }, "random TV show"));
-      tvBtn.addEventListener("click", function () {
-        window.location.hash = "#/tv/" + encodeURIComponent(randomPick("tv", TV).id);
+    return year(date);
+  }
+
+  /* Reel settings: 24 posters in the strip, the chosen one is number 20 and stops in the middle of the 5 you can see. */
+  var REEL_CARDS = 24, REEL_LAND = 20, REEL_MS = 1500;
+
+  function rollPanel() {
+    if (!ALL_MOVIES.length && !ALLTV.length) return null;
+    var msg = h("p", { class: "roll-msg", role: "status", "aria-live": "polite" });
+    var stage = h("div", { class: "roll-stage", hidden: true });  // the reel, then the flip card, appear in here
+    var rollButtons = [];
+    var spinning = false;
+
+    /* The chips. After a roll, chips that do not fit that type (for example "Ongoing only" for movies) are disabled. */
+    var chipBtns = ROLL_CHIPS.map(function (chip) {
+      var b = h("button", { type: "button", class: "filter-btn roll-chip" }, chip.label);
+      b.addEventListener("click", function () { rollChip = chip.key; msg.textContent = ""; refreshChips(); });
+      return b;
+    });
+    function refreshChips() {
+      ROLL_CHIPS.forEach(function (chip, i) {
+        var on = rollChip === chip.key;
+        chipBtns[i].disabled = !!rollType && chip.types.indexOf(rollType) === -1;
+        chipBtns[i].classList.toggle("is-on", on);
+        chipBtns[i].setAttribute("aria-pressed", on ? "true" : "false");
       });
-      buttons.push(tvBtn);
     }
-    return buttons.length ? h("div", { class: "home-cards home-surprise" }, buttons) : null;
+
+    /* Rolls once: spins the reel, then shows the flip card with the result. */
+    function roll(type) {
+      if (spinning) return;                                                   // ignore clicks while the reel is spinning
+      rollType = type;
+      if (chipByKey(rollChip).types.indexOf(type) === -1) rollChip = "any"; // chip does not fit this type: back to Any
+      refreshChips();
+      var pick = rollPick(type);
+      if (!pick) {
+        msg.textContent = "No match, try another chip.";
+        stage.hidden = true;
+        stage.replaceChildren();
+        return;
+      }
+      if (reducedMotion()) { msg.textContent = ""; showCard(type, pick, false); return; }  // no spin, no flip
+      spinReel(type, pick);
+    }
+
+    /* Step 1: a row of 5 posters spins fast and slows down, landing on the chosen title. */
+    function spinReel(type, pick) {
+      var list = rollList(type);
+      var strip = h("div", { class: "reel-strip" });
+      var last = null;
+      for (var i = 0; i < REEL_CARDS; i++) {
+        var item = pick;
+        if (i !== REEL_LAND) {
+          do { item = list[Math.floor(Math.random() * list.length)]; } while (list.length > 1 && item === last);
+        }
+        last = item;
+        var card = h("span", { class: "reel-card" }, posterBlock(item));
+        var img = card.querySelector("img");
+        if (img) img.loading = "eager";                                       // load now, not when it scrolls into view
+        strip.appendChild(card);
+      }
+      stage.hidden = false;
+      stage.replaceChildren(h("div", { class: "roll-reel", "aria-hidden": "true" }, strip, h("span", { class: "reel-marker" })));
+      msg.textContent = "Rolling…";
+      setBusy(true);
+      stage.scrollIntoView({ block: "nearest", behavior: "smooth" });
+
+      var step = strip.children[1].offsetLeft - strip.children[0].offsetLeft; // width of one card + gap
+      strip.style.transition = "none";
+      strip.style.transform = "translateX(0)";
+      void strip.offsetWidth;                                                 // apply the start position first
+      /* The curve starts fast and ends very slowly, like a slot machine stopping. */
+      strip.style.transition = "transform " + REEL_MS + "ms cubic-bezier(0.08, 0.7, 0.12, 1)";
+      strip.style.transform = "translateX(" + (-(REEL_LAND - 2) * step) + "px)";
+      setTimeout(function () {
+        setBusy(false);
+        msg.textContent = "";
+        showCard(type, pick, true);
+      }, REEL_MS + 100);
+    }
+
+    function setBusy(on) {
+      spinning = on;
+      rollButtons.forEach(function (b) { b.disabled = on; });
+      stage.setAttribute("aria-busy", on ? "true" : "false");
+    }
+
+    /* Step 2: the landed poster flips over to show title, year, a short description and two buttons. */
+    function showCard(type, pick, animate) {
+      var openBtn = h("button", { type: "button", class: "roll-open" }, "Open details");
+      var againBtn = h("button", { type: "button", class: "filter-btn roll-card-again" }, "Roll again");
+      openBtn.addEventListener("click", function () {
+        if (type === "movie") openMovieModal(pick, openBtn, true);           // true = the popup gets its own "Roll again"
+        else window.location.hash = "#/tv/" + encodeURIComponent(pick.id);
+      });
+      againBtn.addEventListener("click", function () { roll(type); });
+
+      var card = h("div", { class: "roll-card" + (animate ? " pop" : "") },
+        h("div", { class: "roll-card-inner" },
+          h("div", { class: "roll-face roll-front" }, posterBlock(pick)),
+          h("div", { class: "roll-face roll-back" },
+            h("h3", { class: "roll-card-title" }, pick.title),
+            h("p", { class: "roll-card-year" }, itemYear(pick) + " · " + (type === "movie" ? "Movie" : "TV show")),
+            h("p", { class: "roll-card-desc" }, pick.description || ""),
+            openBtn, againBtn)));
+      stage.hidden = false;
+      stage.replaceChildren(card);
+      if (animate) {
+        setTimeout(function () { card.classList.add("is-flipped"); openBtn.focus({ preventScroll: true }); }, 450);
+      } else {
+        card.classList.add("is-flipped");                                    // reduced motion: show the result side straight away
+        openBtn.focus({ preventScroll: true });
+      }
+      card.scrollIntoView({ block: "nearest", behavior: animate ? "smooth" : "auto" });
+    }
+
+    if (ALL_MOVIES.length) {
+      var movieBtn = h("button", { type: "button", class: "roll-btn" }, "Random movie");
+      movieBtn.addEventListener("click", function () { roll("movie"); });
+      rollButtons.push(movieBtn);
+    }
+    if (ALLTV.length) {
+      var tvBtn = h("button", { type: "button", class: "roll-btn" }, "Random TV show");
+      tvBtn.addEventListener("click", function () { roll("tv"); });
+      rollButtons.push(tvBtn);
+    }
+    refreshChips();
+    return h("section", { class: "roll-panel", "aria-label": "Roll the dice" },
+      h("span", { class: "roll-dice", "aria-hidden": "true" }, "🎲"),
+      h("h2", { class: "roll-title" }, "Roll the dice"),
+      h("div", { class: "filter-row roll-chips", role: "group", "aria-label": "Mood" }, chipBtns),
+      h("div", { class: "roll-actions" }, rollButtons),
+      msg, stage);
   }
 
   /*
    * HOME PAGE. To change the text, edit the two lines with h1 and home-sub.
    * To REMOVE a big button, delete its homeCard(...) line.
-   * To ADD one, copy a homeCard(...) line and change the 3 values:
-   *   link (#/movies #/tv #/timeline #/search), icon (an emoji), name.
+   * To ADD one, copy a homeCard(...) line and change the 4 values:
+   *   link (for example #/stats), icon (an emoji), name, one-line description.
+   *   (Movies, TV Shows, Timeline and Search are tabs in the top bar, so they have no tile.)
    */
   function renderDashboard() {
     app.replaceChildren(
@@ -589,17 +755,13 @@
         renderHero(),
         h("h1", { class: "dash-title" }, "My Marvel Tracker"),
         h("p", { class: "home-sub" }, "Browse every Marvel movie and show."),
-        h("div", { class: "home-cards" },
-          homeCard("#/movies", "\uD83C\uDFAC", "Movies"),
-          homeCard("#/tv", "\uD83D\uDCFA", "TV Shows"),
-          homeCard("#/timeline", "\u23F3", "Timeline"),
-          homeCard("#/search", "\uD83D\uDD0D", "Search"),
-          homeCard("#/characters", "\uD83E\uDDB8", "Characters"),
-          homeCard("#/phases", "\uD83C\uDF0C", "Phases"),
-          homeCard("#/guides", "\uD83E\uDDED", "Watch guides"),
-          homeCard("#/stats", "\uD83D\uDCCA", "Stats")
+        h("div", { class: "home-cards home-tiles" },
+          homeCard("#/characters", "\uD83E\uDDB8", "Characters", "See where every hero and villain appears."),
+          homeCard("#/phases", "\uD83C\uDF0C", "Phases", "The Infinity Saga and beyond, phase by phase."),
+          homeCard("#/guides", "\uD83E\uDDED", "Watch guides", "Ready-made paths for what to watch next."),
+          homeCard("#/stats", "\uD83D\uDCCA", "Stats", "Charts and totals for every movie and show.")
         ),
-        surpriseButtons()));
+        rollPanel()));
   }
 
   /* ================================================================ MOVIES */
@@ -884,10 +1046,31 @@
     }
     var seasonTotal = TV.reduce(function (n, s) { return n + s.seasons.length; }, 0);
 
+    /* Other Marvel TV: one section per "group" (groups and shows sorted by earliest release date). */
+    function firstDate(s) { return s.seasons.map(function (x) { return x.releaseDate; }).sort()[0]; }
+    var otherSections = [];
+    if (OTV.length) {
+      var groups = {};
+      OTV.forEach(function (s) { var g = s.group || "Other shows"; (groups[g] = groups[g] || []).push(s); });
+      var names = Object.keys(groups).sort(function (a, b) {
+        return firstDate(groups[a].slice().sort(function (x, y) { return firstDate(x) < firstDate(y) ? -1 : 1; })[0]) <
+               firstDate(groups[b].slice().sort(function (x, y) { return firstDate(x) < firstDate(y) ? -1 : 1; })[0]) ? -1 : 1;
+      });
+      otherSections = names.map(function (g) {
+        var list = groups[g].sort(function (x, y) { return firstDate(x) < firstDate(y) ? -1 : 1; });
+        return h("section", { class: "phase" },
+          sectionHeader(g, "Not on the MCU timeline", plural(list.length, "show", "shows")),
+          h("div", { class: "grid" }, list.map(function (s) { return makeTVCard(s, null); })));
+      });
+      otherSections.unshift(h("h2", { class: "phase-title", style: "margin-top:36px" }, "Other Marvel TV"));
+    }
+
+    var totals = [[TV.length, "TV shows"], [seasonTotal, "seasons"]];
+    if (OTV.length) totals.push([OTV.length, "Other Marvel TV shows"]);
     app.replaceChildren.apply(app, [
       h("h1", { class: "sr-only" }, "TV Shows"),
-      summaryBox("TV totals", [[TV.length, "TV shows"], [seasonTotal, "seasons"]])
-    ].concat(sections));
+      summaryBox("TV totals", totals)
+    ].concat(sections, otherSections));
   }
 
   /* ============================================================ ONE TV SHOW */
@@ -895,7 +1078,8 @@
   var openSeasons = {}; // season id -> true while its episode list is open
 
   function renderShow(showId) {
-    var show = TV.filter(function (s) { return s.id === showId; })[0];
+    var show = ALLTV.filter(function (s) { return s.id === showId; })[0];
+    var isOther = OTV.indexOf(show) !== -1;
     if (!show) {
       app.replaceChildren(
         h("h1", { class: "sr-only" }, "Show not found"),
@@ -907,7 +1091,8 @@
     var facts = h("dl", { class: "show-meta" },
       h("div", null, h("dt", null, "Category"), h("dd", null, capitalize(show.category))),
       h("div", null, h("dt", null, "Universe"), h("dd", null, show.universe.toUpperCase())),
-      h("div", null, h("dt", null, "Phase"), h("dd", null, showPhases(show))),
+      isOther ? h("div", null, h("dt", null, "Group"), h("dd", null, show.group || "Other Marvel TV"))
+              : h("div", null, h("dt", null, "Phase"), h("dd", null, showPhases(show))),
       h("div", null, h("dt", null, "Seasons"), h("dd", null, String(show.seasons.length))));
 
     /* Optional extras: each piece is skipped completely when its field is empty or missing. */
@@ -939,7 +1124,10 @@
         watchBeforeNode(show, false)));
 
     var list = h("div", { class: "seasons" });
-    sequence("season").filter(function (u) { return u.show === show; }).forEach(function (u) {
+    var seasonList = isOther
+      ? show.seasons.slice().sort(function (a, b) { return a.releaseDate < b.releaseDate ? -1 : 1; }).map(function (se) { return { season: se }; })
+      : sequence("season").filter(function (u) { return u.show === show; });
+    seasonList.forEach(function (u) {
       var se = u.season;
       var panelId = "season-panel-" + se.id;
 
@@ -951,7 +1139,7 @@
         h("span", { class: "season-info" },
           h("span", { class: "season-name" }, "Season " + se.season),
           h("span", { class: "season-facts" },
-            dotted(["Phase " + se.phase, fmtDate(se.releaseDate), plural(se.episodeCount, "episode", "episodes")]))),
+            dotted((se.phase !== undefined ? ["Phase " + se.phase] : []).concat([fmtDate(se.releaseDate), plural(se.episodeCount, "episode", "episodes")])))),
         h("span", { class: "season-chevron", "aria-hidden": "true" }));
 
       var body;
@@ -1059,12 +1247,12 @@
   var searchPhase = "all";  // all | "1" | "2" ...
   var searchUI = null;      // handles to the search page while it is on screen
 
-  /* Every movie, X-Men, Sony, Other Marvel movie and TV season as a searchable entry. */
+  /* Every movie, X-Men, Sony, Other Marvel movie, TV season and Other Marvel TV season as a searchable entry. */
   function searchEntries() {
     var out = MOVIES.concat(XMOVIES, SMOVIES, OMOVIES).map(function (m) {
       return { type: "movie", id: m.id, movie: m, phase: m.phase, text: m.title };
     });
-    TV.forEach(function (s) {
+    ALLTV.forEach(function (s) {
       s.seasons.forEach(function (se) {
         var words = [s.title, "season " + se.season];
         se.episodes.forEach(function (ep) { words.push(ep.title); });
@@ -1082,6 +1270,11 @@
     xsequence().forEach(function (m, i) { rank[m.id] = 1000 + i; });
     ssequence().forEach(function (m, i) { rank[m.id] = 2000 + i; });
     osequence().forEach(function (m, i) { rank[m.id] = 3000 + i; });
+    /* Other Marvel TV seasons come last, by release date */
+    var otherSeasons = [];
+    OTV.forEach(function (s) { s.seasons.forEach(function (se) { otherSeasons.push(se); }); });
+    otherSeasons.sort(function (a, b) { return a.releaseDate < b.releaseDate ? -1 : 1; })
+      .forEach(function (se, i) { rank[se.id] = 4000 + i; });
     return searchEntries().filter(function (e) {
       return (searchType === "all" || e.type === searchType) &&
              (searchPhase === "all" || String(e.phase) === searchPhase) &&
@@ -1490,6 +1683,58 @@
   }
 
   var tabs = [].slice.call(document.querySelectorAll(".tab"));
+
+  /* ---- Top bar: "Explore" dropdown (desktop) and the faded edge on the phone tab row ---- */
+  var exploreBtn = document.getElementById("explore-btn");
+  var exploreMenu = document.getElementById("explore-menu");
+  var exploreLinks = [].slice.call(document.querySelectorAll(".explore-link"));
+  function closeExplore(focusButton) {
+    if (!exploreMenu || exploreMenu.hidden) return;
+    exploreMenu.hidden = true;
+    exploreBtn.setAttribute("aria-expanded", "false");
+    if (focusButton) exploreBtn.focus();
+  }
+  if (exploreBtn && exploreMenu) {
+    exploreBtn.addEventListener("click", function () {
+      if (exploreMenu.hidden) { exploreMenu.hidden = false; exploreBtn.setAttribute("aria-expanded", "true"); }
+      else closeExplore();
+    });
+    /* Down arrow opens the menu and moves into it; Up / Down move between the links */
+    exploreBtn.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowDown") return;
+      e.preventDefault();
+      exploreMenu.hidden = false;
+      exploreBtn.setAttribute("aria-expanded", "true");
+      exploreLinks[0].focus();
+    });
+    exploreMenu.addEventListener("keydown", function (e) {
+      var i = exploreLinks.indexOf(document.activeElement);
+      if (e.key === "ArrowDown") { e.preventDefault(); exploreLinks[Math.min(i + 1, exploreLinks.length - 1)].focus(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); if (i > 0) exploreLinks[i - 1].focus(); else exploreBtn.focus(); }
+    });
+    /* Click outside, Esc, or tabbing out of the menu closes it */
+    document.addEventListener("click", function (e) {
+      if (!e.target.closest || !e.target.closest(".explore")) closeExplore();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !exploreMenu.hidden) { e.preventDefault(); closeExplore(true); }
+    });
+    document.querySelector(".explore").addEventListener("focusout", function (e) {
+      if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) closeExplore();
+    });
+  }
+
+  /* Phone tab row: a faded right edge says "swipe for more". It goes away at the very end. */
+  var tabRowEl = document.querySelector(".tabs");
+  function updateTabFade() {
+    if (!tabRowEl) return;
+    var atEnd = tabRowEl.scrollLeft + tabRowEl.clientWidth >= tabRowEl.scrollWidth - 2;
+    tabRowEl.classList.toggle("tabs-at-end", atEnd);
+  }
+  if (tabRowEl) {
+    tabRowEl.addEventListener("scroll", updateTabFade, { passive: true });
+    window.addEventListener("resize", updateTabFade);
+  }
   var ROUTE_NAMES = ["tv", "movies", "timeline", "search", "characters", "phases", "guides", "stats"];
   var lastShowId = null; // so going Back to the TV list can refocus that show's card
 
@@ -1541,13 +1786,24 @@
       if (t.getAttribute("data-route") === r.name) t.setAttribute("aria-current", "page");
       else t.removeAttribute("aria-current");
     });
-    /* On a phone the tab row scrolls sideways: keep the current tab in view */
-    var activeTab = document.querySelector(".tab[aria-current=\"page\"]");
-    if (activeTab && activeTab.parentNode.scrollWidth > activeTab.parentNode.clientWidth && activeTab.scrollIntoView) {
-      activeTab.scrollIntoView({ inline: "center", block: "nearest" });
-    }
+    /* Explore menu (desktop): mark its links, and light up the button when one of them is the current page */
+    var inExplore = false;
+    exploreLinks.forEach(function (a) {
+      var on = a.getAttribute("data-route") === r.name;
+      if (on) { a.setAttribute("aria-current", "page"); inExplore = true; } else a.removeAttribute("aria-current");
+    });
+    if (exploreBtn) exploreBtn.classList.toggle("has-current", inExplore);
+    closeExplore();
 
-    var show = r.showId ? TV.filter(function (s) { return s.id === r.showId; })[0] : null;
+    /* On a phone the tab row scrolls sideways: keep the current tab in view */
+    var tabRow = document.querySelector(".tabs");
+    var activeTab = document.querySelector(".tab[aria-current=\"page\"]");
+    if (tabRow && activeTab && activeTab.offsetParent && tabRow.scrollWidth > tabRow.clientWidth) {
+      tabRow.scrollLeft = activeTab.offsetLeft - (tabRow.clientWidth - activeTab.offsetWidth) / 2;
+    }
+    updateTabFade();
+
+    var show = r.showId ? ALLTV.filter(function (s) { return s.id === r.showId; })[0] : null;
     document.title = (show ? show.title + " | TV Shows" : TITLES[r.name]) + " | Marvel Mission Control";
 
     openSeasons = {}; // every arrival starts with seasons closed, except the one in the address
@@ -1578,7 +1834,7 @@
     if (el) el.textContent = text;
   }
   setText("tab-count-movies", String(ALL_MOVIES.length));
-  setText("tab-count-tv", String(TV.length));
+  setText("tab-count-tv", String(ALLTV.length));
 
   /* Watch order menu */
   var orderSelect = document.getElementById("watch-order") || document.createElement("select");

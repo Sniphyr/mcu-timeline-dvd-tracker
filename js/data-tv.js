@@ -298,5 +298,121 @@ window.MCU_TV = [
         ] }
     ] },
 
+  /* ===== SHOW: What If...? ===== */
+  { id: "what-if", title: "What If...?", type: "tv", universe: "mcu", category: "animation",
+    importance: "optional", poster: "posters/tv/what-if-s1.webp",
+    description: "Animated anthology that asks what would happen if key moments of the MCU played out differently, narrated by The Watcher.",
+    creator: "A.C. Bradley (head writer)",
+    cast: [
+      "Jeffrey Wright (Uatu the Watcher)",
+      "Hayley Atwell (Peggy Carter / Captain Carter)",
+      "Chadwick Boseman (T'Challa / Star-Lord)",
+      "Josh Brolin (Thanos)",
+      "Mark Ruffalo (Bruce Banner / Hulk)",
+      "Benedict Cumberbatch (Doctor Strange)"],
+    trailer: "", whereToWatch: "", status: "Ended",
+    seasons: [
+      { id: "what-if-s1", season: 1, phase: 4, releaseDate: "2021-08-11", releaseOrder: 2450, chronologicalOrder: 4600,
+        episodeCount: 9, episodes: [] },
+      { id: "what-if-s2", season: 2, phase: 5, releaseDate: "2023-12-22", releaseOrder: 3350, chronologicalOrder: 7000,
+        episodeCount: 9, episodes: [],
+        poster: "posters/tv/what-if-s2.webp" },
+      { id: "what-if-s3", season: 3, phase: 5, releaseDate: "2024-12-22", releaseOrder: 3480, chronologicalOrder: 7300,
+        episodeCount: 8, episodes: [],
+        poster: "posters/tv/what-if-s3.webp" }
+    ] },
+
+  /* ===== SHOW: X-Men '97 ===== */
+  { id: "x-men-97", title: "X-Men '97", type: "tv", universe: "mcu", category: "animation",
+    importance: "recommended", poster: "posters/tv/x-men-97-s1.webp",
+    description: "The X-Men of the 1990s animated series return to defend a world that fears and hates them, as a new era begins without Professor X. Its place on the timeline is a judgment call (see data-movies.js).",
+    creator: "Beau DeMayo (season 1); Matthew Chauncey (season 2 head writer)",
+    cast: [
+      "Ray Chase (Cyclops)",
+      "Jennifer Hale (Jean Grey)",
+      "Lenore Zann (Rogue)",
+      "Cal Dodd (Wolverine)",
+      "Alison Sealy-Smith (Storm)",
+      "Chris Potter (Gambit)"],
+    trailer: "", whereToWatch: "", status: "Ongoing",
+    seasons: [
+      { id: "x-men-97-s1", season: 1, phase: 5, releaseDate: "2024-03-20", releaseOrder: 3370, chronologicalOrder: 450,
+        episodeCount: 10, episodes: [] },
+      { id: "x-men-97-s2", season: 2, phase: 6, releaseDate: "2026-07-01", releaseOrder: 3750, chronologicalOrder: 460,
+        episodeCount: 9, episodes: [],
+        poster: "posters/tv/x-men-97-s2.webp" }
+    ] },
+
+  /* ===== SHOW: Werewolf by Night ===== */
+  { id: "werewolf-by-night", title: "Werewolf by Night", type: "tv", universe: "mcu", category: "special",
+    importance: "optional", poster: "posters/tv/werewolf-by-night-s1.webp",
+    description: "Monster hunters gather to compete for a powerful relic, and one of them is hiding a beast.",
+    creator: "Michael Giacchino (director)",
+    cast: [
+      "Gael García Bernal (Jack Russell)",
+      "Laura Donnelly (Elsa Bloodstone)",
+      "Harriet Sansom Harris (Verussa Bloodstone)",
+      "Al Hamacher (Ted)",
+      "Eugenie Bondurant (Liv)"],
+    trailer: "", whereToWatch: "", status: "Ended",
+    seasons: [
+      { id: "werewolf-by-night-s1", season: 1, phase: 4, releaseDate: "2022-10-07", releaseOrder: 2960, chronologicalOrder: 6300,
+        episodeCount: 1, episodes: [] }
+    ] },
+
+  /* ===== SHOW: Ms. Marvel ===== */
+  { id: "ms-marvel", title: "Ms. Marvel", type: "tv", universe: "mcu", category: "series",
+    importance: "recommended", poster: "posters/tv/ms-marvel-s1.webp",
+    description: "Teenager Kamala Khan, a big Avengers fan, gets cosmic bangles that unlock powers she never expected.",
+    creator: "Bisha K. Ali",
+    cast: [
+      "Iman Vellani (Kamala Khan / Ms. Marvel)",
+      "Matt Lintz (Bruno Carrelli)",
+      "Yasmeen Fletcher (Nakia Bahadir)",
+      "Zenobia Shroff (Muneeba Khan)",
+      "Mohan Kapur (Yusuf Khan)",
+      "Saagar Shaikh (Aamir Khan)"],
+    trailer: "", whereToWatch: "", status: "Ended",
+    seasons: [
+      { id: "ms-marvel-s1", season: 1, phase: 4, releaseDate: "2022-06-08", releaseOrder: 2850, chronologicalOrder: 6000,
+        episodeCount: 6, episodes: [] }
+    ] },
+
+  /* ===== SHOW: She-Hulk: Attorney at Law ===== */
+  { id: "she-hulk-attorney-at-law", title: "She-Hulk: Attorney at Law", type: "tv", universe: "mcu", category: "series",
+    importance: "optional", poster: "posters/tv/she-hulk-attorney-at-law-s1.webp",
+    description: "Lawyer Jennifer Walters, cousin of Bruce Banner, takes on cases involving superhuman clients while learning to live as She-Hulk.",
+    creator: "Jessica Gao",
+    cast: [
+      "Tatiana Maslany (Jennifer Walters / She-Hulk)",
+      "Mark Ruffalo (Bruce Banner / Hulk)",
+      "Tim Roth (Emil Blonsky / Abomination)",
+      "Jameela Jamil (Titania)",
+      "Ginger Gonzaga (Nikki Ramos)",
+      "Josh Segarra (Augustus 'Pug' Pugliese)"],
+    trailer: "", whereToWatch: "", status: "Ended",
+    seasons: [
+      { id: "she-hulk-attorney-at-law-s1", season: 1, phase: 4, releaseDate: "2022-08-18", releaseOrder: 2940, chronologicalOrder: 5900,
+        episodeCount: 9, episodes: [] }
+    ] },
+
+  /* ===== SHOW: Secret Invasion ===== */
+  { id: "secret-invasion", title: "Secret Invasion", type: "tv", universe: "mcu", category: "series",
+    importance: "recommended", poster: "posters/tv/secret-invasion-s1.webp",
+    description: "Nick Fury and Talos uncover a Skrull infiltration of Earth's governments.",
+    creator: "Kyle Bradstreet",
+    cast: [
+      "Samuel L. Jackson (Nick Fury)",
+      "Ben Mendelsohn (Talos)",
+      "Cobie Smulders (Maria Hill)",
+      "Emilia Clarke (G'iah)",
+      "Kingsley Ben-Adir (Gravik)",
+      "Olivia Colman (Sonya Falsworth)"],
+    trailer: "", whereToWatch: "", status: "Ended",
+    seasons: [
+      { id: "secret-invasion-s1", season: 1, phase: 5, releaseDate: "2023-06-21", releaseOrder: 3220, chronologicalOrder: 6700,
+        episodeCount: 6, episodes: [] }
+    ] },
+
   /* ===== END OF SHOWS ===== */
 ];

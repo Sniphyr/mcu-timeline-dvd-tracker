@@ -317,15 +317,18 @@ The code for this is in `js/app.js`, in `function renderMovies` (it is commented
 
 Under the four big tiles there is one glowing "Roll the dice" panel with two big buttons and a row of mood chips above them.
 
-- **Random movie:** opens the popup of a random movie (MCU, X-Men, Sony / Spider-Man and Other Marvel movies). The popup has a **Roll again** button at the top while it was opened from this panel (it is hidden if you move with the arrows or open a related movie).
-- **Random TV show:** opens the page of a random show (MCU and Other Marvel shows).
+- **Random movie / Random TV show:** a row of 5 posters spins fast and slows down over about 1.5 seconds, landing on the chosen title (movies: MCU, X-Men, Sony / Spider-Man and Other Marvel; shows: MCU and Other Marvel). The landed poster then **flips over** and shows its title, year, a short description and two buttons:
+  - **Open details:** opens the movie popup, or the TV show page. The popup has its own **Roll again** button at the top while it was opened this way (it is hidden if you move with the arrows or open a related movie).
+  - **Roll again:** rolls the same type again with the same chip.
+- **Reduced motion:** if your device has "reduce motion" turned on, there is no spin and no flip. The result side of the card shows straight away.
+- **Touch screens and small phones:** the buttons are at least 44 px tall, the reel and card shrink to fit (tested at 390 px wide), and the page scrolls to the card by itself.
 - **Chips** (one on at a time): Any, Essential only, Under 2 hours, MCU only, X-Men only, Spider-Man/Sony only, Other Marvel only, Ongoing only. After you roll a movie, the chips that only fit TV ("Ongoing only") are greyed out; after a TV roll, the movie-only chips (Under 2 hours, X-Men, Sony) are greyed out. If the chip that is on does not fit the button you press, it goes back to "Any".
 - If nothing matches, the panel says "No match, try another chip."
 - A roll never gives the same title twice in a row (unless only one title matches).
 
 How the chips decide: Essential = the `importance` field; Under 2 hours = `runtime` under 120 (movies with no runtime are skipped); X-Men / Sony / Other = the `universe` field; MCU and Other Marvel for TV = which file the show is in (`data-tv.js` or `data-tv-other.js`); Ongoing = the show's `status`.
 
-The code is in `js/app.js`: search for `ROLL_CHIPS` (the chip list, add or remove a chip with one line) and `function rollPanel`. The look is in `css/styles.css`, search for `Roll the dice`. To remove the panel, delete the `rollPanel()` line in `renderDashboard`.
+The code is in `js/app.js`: search for `ROLL_CHIPS` (the chip list, add or remove a chip with one line) and `function rollPanel` (`spinReel` is the reel, `showCard` is the flip card). The spin length and number of posters are the `REEL_CARDS`, `REEL_LAND` and `REEL_MS` numbers just above `rollPanel`. The look is in `css/styles.css`, search for `Roll the dice` and `Batch 13`. To remove the panel, delete the `rollPanel()` line in `renderDashboard`.
 
 ---
 

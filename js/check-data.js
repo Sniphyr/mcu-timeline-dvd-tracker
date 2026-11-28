@@ -8,6 +8,7 @@
   "use strict";
   var movies = (window.MCU_MOVIES || []).concat(window.XMEN_MOVIES || [], window.SONY_MOVIES || [], window.OTHER_MOVIES || []);
   var shows = window.MCU_TV || [];
+  var otherShows = window.MCU_TV_OTHER || [];   // "Other Marvel TV": no phase / order numbers needed
   var problems = [];
   var seenId = {};
 
@@ -55,6 +56,20 @@
     });
   });
 
+  otherShows.forEach(function (s) {
+    need(s, ["id", "title", "universe", "category", "description", "poster", "seasons"], "Other show " + (s.id || s.title));
+    checkId(s.id);
+    (s.seasons || []).forEach(function (se) {
+      need(se, ["id", "season", "releaseDate", "episodeCount", "episodes"], "Season " + se.id);
+      checkId(se.id);
+      checkDate(se.releaseDate, se.id);
+      (se.episodes || []).forEach(function (ep) { checkId(ep.id); });
+      if (se.episodes && se.episodes.length && se.episodes.length !== se.episodeCount) {
+        problems.push("Season " + se.id + " lists " + se.episodes.length + " episodes but episodeCount is " + se.episodeCount);
+      }
+    });
+  });
+
   /* MCU movies and TV seasons share one set of order numbers. X-Men has its own. */
   var mcu = movies.filter(function (m) { return m.universe !== "X-Men" && m.universe !== "sony" && m.universe !== "other"; });
   var sony = movies.filter(function (m) { return m.universe === "sony"; });
@@ -80,6 +95,10 @@
       chronological: Math.min.apply(null, se.map(function (x) { return x.chronologicalOrder; })) };
     se.forEach(function (x) { byId[x.id] = { rec: x, scale: "mcu", release: x.releaseOrder, chronological: x.chronologicalOrder }; });
   });
+  otherShows.forEach(function (s) {
+    byId[s.id] = { rec: s, scale: "tvother" };
+    (s.seasons || []).forEach(function (x) { byId[x.id] = { rec: x, scale: "tvother" }; });
+  });
   function checkWatchBefore(owner) {
     var wb = owner.watchBefore;
     if (wb === undefined || wb === null) return;
@@ -104,16 +123,17 @@
   }
   movies.forEach(checkWatchBefore);
   shows.forEach(checkWatchBefore);
+  otherShows.forEach(checkWatchBefore);
 
   /* ---- importance: the card tag only shows for these three words ---- */
-  movies.concat(shows).forEach(function (r) {
+  movies.concat(shows, otherShows).forEach(function (r) {
     if (["essential", "recommended", "optional"].indexOf(String(r.importance || "").trim().toLowerCase()) === -1) {
       problems.push(r.id + ": importance should be essential, recommended or optional (found '" + (r.importance || "") + "'), so its card has no tag and the importance filter will miss it");
     }
   });
 
   /* ---- TV extras: status must be one of the three words ---- */
-  shows.forEach(function (s) {
+  shows.concat(otherShows).forEach(function (s) {
     if (s.status && ["ongoing", "ended", "upcoming"].indexOf(String(s.status).trim().toLowerCase()) === -1) {
       problems.push("Show " + s.id + ": status should be Ongoing, Ended or Upcoming (found '" + s.status + "')");
     }
