@@ -161,6 +161,9 @@
     guideIds[g.id] = true;
     if (!g.title) problems.push("Guide " + g.id + " has no title");
     checkIdList(g.id, "Guide", g.items);
+    if (g.category && ["MCU", "X-Men", "Spider-Man", "Netflix & TV", "Other movies"].indexOf(g.category) === -1) {
+      problems.push("Guide " + g.id + ": category \"" + g.category + "\" is not one of MCU, X-Men, Spider-Man, Netflix & TV, Other movies");
+    }
   });
   checkIdList("list", "Featured banner (data-featured.js)", window.MCU_FEATURED);
   [].concat(window.MCU_FEATURED || []).forEach(function (id) {

@@ -100,6 +100,61 @@
     return OMOVIES.slice().sort(function (a, b) { return compare(a, b, field); });
   }
 
+  /* ---- Group buttons (Movies and Timeline pages, batch 14) ----
+     key = used in the address (#/movies/<key>). other = the `group` text in js/data-movies-other.js
+     (no group text = "Other Marvel films"). To add a group button, add one line here. */
+  var GROUPS = [
+    { key: "all",            label: "All" },
+    { key: "mcu",            label: "MCU" },
+    { key: "x-men",          label: "X-Men" },
+    { key: "sony",           label: "Sony Spider-Man" },
+    { key: "fantastic-four", label: "Fantastic Four (Fox)",              other: "Fantastic Four (Fox)" },
+    { key: "daredevil",      label: "Daredevil, Elektra & Ghost Rider",  other: "Daredevil, Elektra and Ghost Rider" },
+    { key: "punisher",       label: "The Punisher",                      other: "The Punisher" },
+    { key: "blade",          label: "Blade",                             other: "Blade" },
+    { key: "other",          label: "Other Marvel films",                other: "Other Marvel films" }
+  ];
+  /* TV page group buttons (batch 15). `group` = the group text in js/data-tv-other.js; "mcu" = the shows in js/data-tv.js. */
+  var TV_GROUPS = [
+    { key: "all",               label: "All" },
+    { key: "mcu",               label: "MCU" },
+    { key: "netflix",           label: "Netflix / Defenders",                group: "Netflix / Defenders" },
+    { key: "abc-hulu-freeform", label: "ABC, Hulu & Freeform",               group: "ABC, Hulu & Freeform" },
+    { key: "fox",               label: "Fox",                                group: "Fox" },
+    { key: "disney-plus",       label: "Disney+",                            group: "Disney+" },
+    { key: "animation",         label: "Animation (Disney+ & Hulu)",         group: "Animation (Disney+ & Hulu)" },
+    { key: "kids-animation",    label: "Kids & Disney XD animation",         group: "Kids & Disney XD animation" },
+    { key: "specials",          label: "Specials",                           group: "Specials" },
+    { key: "documentaries",     label: "Documentaries & behind the scenes",  group: "Documentaries & behind the scenes" },
+    { key: "older-live-action", label: "Older live-action & TV films",       group: "Older live-action & TV films" },
+    { key: "older-animation",   label: "Older animation",                    group: "Older animation (1990s-2000s)" }
+  ];
+  function groupList(page) { return page === "tv" ? TV_GROUPS : GROUPS; }
+  var groupKey = "all"; // the selected group; route() sets it from the address, so it resets to All on every arrival
+
+  function groupDef(key, page) { return groupList(page).filter(function (g) { return g.key === key; })[0]; }
+  /* Does this "other" movie belong to the group button? */
+  function inOtherGroup(m, g) { return (m.group || "Other Marvel films") === g.other; }
+  /* Which sections a group shows: "mcu", "x-men" and "sony" by key; the rest filter the Other Marvel movies. */
+  function showsGroup(part) { return groupKey === "all" || groupKey === part; }
+  function otherFor(list) {
+    var g = groupDef(groupKey);
+    return g.other ? list.filter(function (m) { return inOtherGroup(m, g); }) : (groupKey === "all" ? list : []);
+  }
+
+  /* The row of group buttons. Clicking one changes the address (so Back works) and the page redraws.
+     counts = { groupKey: number }. */
+  function groupRow(page, counts) {
+    var row = filterRow("Choose a group",
+      groupList(page).map(function (g) { return { key: g.key, label: g.label + " (" + counts[g.key] + ")" }; }),
+      function () { return groupKey; },
+      function (k) { window.location.hash = "#/" + page + (k === "all" ? "" : "/" + k); },
+      function () { /* the hash change redraws the page */ });
+    row.el.classList.add("group-row");
+    row.refresh();
+    return row.el;
+  }
+
   var SONY_ERAS = { 1: "Raimi Trilogy", 2: "The Amazing Spider-Man", 3: "Sony\u2019s Spider-Man Universe", 4: "Spider-Verse" };
   var XMEN_ERAS = { 1: "Original Trilogy", 2: "Wolverine Solo Films", 3: "First Class Prequels", 4: "Deadpool & Modern Era" };
 
@@ -768,7 +823,7 @@
 
   /* What the filter and sort buttons on the Movies page are set to. These stay
      as you leave and come back. "all" = no filter; sort "default" = follow the Watch order menu. */
-  var movieFilter = { phase: "all", importance: "all", sort: "default" };
+  var movieFilter = { phase: "all", importance: "all", sort: "default", group: "all" };
 
   /* Sorts a list of movies by release YEAR ("newest" or "oldest" first).
      Movies from the same year keep the order of the Watch order menu. */
@@ -780,44 +835,58 @@
     });
   }
 
+  /* How many Other Marvel movies a group button has */
+  function otherCount(key) { return OMOVIES.filter(function (m) { return inOtherGroup(m, groupDef(key)); }).length; }
+
   function renderMovies() {
     /* ---- 1. The filter and sort buttons (drawn once; clicking one redraws only the results below them) ---- */
+    /* The phase buttons mean different things per group, so start from "all" when the group changes. */
+    if (movieFilter.group !== groupKey) { movieFilter.group = groupKey; movieFilter.phase = "all"; }
+    var eraMode = groupKey === "x-men"; // X-Men has story eras instead of MCU phases
     var phases = {};
     MOVIES.forEach(function (m) { phases[m.phase] = true; });
     var phaseButtons = [{ key: "all", label: "All phases" }].concat(
       Object.keys(phases).map(Number).sort(byNumber).map(function (p) { return { key: String(p), label: "Phase " + p }; }));
+    if (eraMode) {
+      phaseButtons = [{ key: "all", label: "All eras" }].concat(
+        Object.keys(XMEN_ERAS).map(Number).sort(byNumber).map(function (p) { return { key: String(p), label: XMEN_ERAS[p] }; }));
+    }
+    var hasPhases = groupKey === "all" || groupKey === "mcu" || eraMode; // other groups have no phases
     var importanceButtons = [{ key: "all", label: "All importance" }, { key: "essential", label: "Essential" },
                              { key: "recommended", label: "Recommended" }, { key: "optional", label: "Optional" }];
     var sortButtons = [{ key: "default", label: "Watch order" }, { key: "newest", label: "Newest first" }, { key: "oldest", label: "Oldest first" }];
 
     var rows = [
-      filterRow("Filter by phase", phaseButtons,
-        function () { return movieFilter.phase; }, function (k) { movieFilter.phase = k; }, update),
+      hasPhases ? filterRow("Filter by phase", phaseButtons,
+        function () { return movieFilter.phase; }, function (k) { movieFilter.phase = k; }, update) : null,
       filterRow("Filter by importance", importanceButtons,
         function () { return movieFilter.importance; }, function (k) { movieFilter.importance = k; }, update),
       filterRow("Sort by year", sortButtons,
         function () { return movieFilter.sort; }, function (k) { movieFilter.sort = k; }, update)
-    ];
+    ].filter(Boolean);
     var results = h("div", { class: "movie-results" });
 
     /* ---- 2. Draws the movie lists for the current buttons ---- */
     function drawResults() {
       var chrono = watchOrder === "chronological";
-      var phaseOn = movieFilter.phase !== "all";
+      var phaseOn = hasPhases && movieFilter.phase !== "all";
       var yearSorted = movieFilter.sort !== "default";
 
       /* A movie passes if it matches the importance button (and, for MCU movies, the phase button). */
       function importanceOk(m) { return movieFilter.importance === "all" || m.importance === movieFilter.importance; }
 
       /* MCU movies come out of sequence() already in the Watch order menu's order. */
-      var movies = sequence("movie").map(function (u) { return u.movie; })
+      var movies = !showsGroup("mcu") ? [] : sequence("movie").map(function (u) { return u.movie; })
         .filter(function (m) { return importanceOk(m) && (!phaseOn || String(m.phase) === movieFilter.phase); });
-      /* X-Men "phases" are story eras, not MCU phases, so X-Men movies are hidden while a phase is picked. */
-      var xmovies = phaseOn ? [] : xsequence().filter(importanceOk);
+      /* On "All", X-Men "phases" are story eras, not MCU phases, so X-Men movies are hidden while a phase is picked.
+         On the X-Men button the row shows the eras, so the era filters the X-Men movies. */
+      var xmovies = !showsGroup("x-men") ? [] : xsequence().filter(function (m) {
+        return importanceOk(m) && (eraMode ? (!phaseOn || String(m.phase) === movieFilter.phase) : !phaseOn);
+      });
 
-      var smovies = phaseOn ? [] : ssequence().filter(importanceOk);
+      var smovies = (phaseOn || !showsGroup("sony")) ? [] : ssequence().filter(importanceOk);
 
-      var omovies = phaseOn ? [] : osequence().filter(importanceOk);
+      var omovies = phaseOn ? [] : otherFor(osequence()).filter(importanceOk);
 
       if (yearSorted) {
         omovies = sortByYear(omovies, movieFilter.sort);
@@ -897,18 +966,18 @@
       }
       var oSections = otherSections(omovies);
 
-      var stats = [[movies.length, "MCU movies"]];
+      var stats = movies.length || groupKey === "mcu" ? [[movies.length, "MCU movies"]] : [];
       if (xmovies.length) stats.push([xmovies.length, "X-Men movies"]);
       if (smovies.length) stats.push([smovies.length, "Sony Spider-Man movies"]);
       if (omovies.length) stats.push([omovies.length, "Other Marvel movies"]);
 
-      var note = (phaseOn && (XMOVIES.length || SMOVIES.length || OMOVIES.length))
+      var note = (phaseOn && !eraMode && (XMOVIES.length || SMOVIES.length || OMOVIES.length))
         ? h("p", { class: "filter-note" }, "Phases only apply to MCU movies, so X-Men, Sony and Other Marvel movies are hidden while a phase is picked.") : null;
       var nothing = (!movies.length && !xmovies.length && !smovies.length && !omovies.length)
         ? emptyBox("No movies match", "Try a different phase or importance button.") : null;
 
       /* note and nothing can be null; filter(Boolean) drops them so no "null" text is drawn */
-      results.replaceChildren.apply(results, [summaryBox("Movie totals", stats), note, nothing].concat(sections, xSections, sSections, oSections).filter(Boolean));
+      results.replaceChildren.apply(results, [stats.length ? summaryBox("Movie totals", stats) : null, note, nothing].concat(sections, xSections, sSections, oSections).filter(Boolean));
     }
 
     /* Runs after any filter or sort button is clicked: update the buttons, then redraw the lists. */
@@ -920,7 +989,11 @@
     /* ---- 3. Put it on the page ---- */
     app.replaceChildren(
       h("h1", { class: "sr-only" }, "Movies, " + orderDef(watchOrder).label.toLowerCase()),
-      h("div", { class: "search-filters movie-filters" }, rows.map(function (r) { return r.el; })),
+      /* The group buttons come first, then the phase / importance / sort rows */
+      h("div", { class: "search-filters movie-filters" },
+        [groupRow("movies", { all: ALL_MOVIES.length, mcu: MOVIES.length, "x-men": XMOVIES.length, sony: SMOVIES.length,
+          "fantastic-four": otherCount("fantastic-four"), daredevil: otherCount("daredevil"), punisher: otherCount("punisher"),
+          blade: otherCount("blade"), other: otherCount("other") })].concat(rows.map(function (r) { return r.el; }))),
       results);
     update();
   }
@@ -1027,8 +1100,14 @@
   /* =============================================================== TV LIST */
 
   function renderTV() {
-    var sections;
-    if (watchOrder === "chronological") {
+    var sections = [];
+    var showMcu = groupKey === "all" || groupKey === "mcu"; // the MCU shows (data-tv.js) belong to All and MCU
+    var tvGroup = groupDef(groupKey, "tv");
+    /* The Other Marvel TV shows that the selected button shows */
+    var otv = OTV.filter(function (s) { return groupKey === "all" || (tvGroup.group && s.group === tvGroup.group); });
+    if (!showMcu) {
+      /* no MCU sections */
+    } else if (watchOrder === "chronological") {
       var seasons = sequence("season");
       sections = [h("section", { class: "phase" },
         sectionHeader("Chronological order", "Marvel\u2019s official MCU timeline", plural(seasons.length, "season", "seasons")),
@@ -1049,9 +1128,9 @@
     /* Other Marvel TV: one section per "group" (groups and shows sorted by earliest release date). */
     function firstDate(s) { return s.seasons.map(function (x) { return x.releaseDate; }).sort()[0]; }
     var otherSections = [];
-    if (OTV.length) {
+    if (otv.length) {
       var groups = {};
-      OTV.forEach(function (s) { var g = s.group || "Other shows"; (groups[g] = groups[g] || []).push(s); });
+      otv.forEach(function (s) { var g = s.group || "Other shows"; (groups[g] = groups[g] || []).push(s); });
       var names = Object.keys(groups).sort(function (a, b) {
         return firstDate(groups[a].slice().sort(function (x, y) { return firstDate(x) < firstDate(y) ? -1 : 1; })[0]) <
                firstDate(groups[b].slice().sort(function (x, y) { return firstDate(x) < firstDate(y) ? -1 : 1; })[0]) ? -1 : 1;
@@ -1065,10 +1144,23 @@
       otherSections.unshift(h("h2", { class: "phase-title", style: "margin-top:36px" }, "Other Marvel TV"));
     }
 
-    var totals = [[TV.length, "TV shows"], [seasonTotal, "seasons"]];
-    if (OTV.length) totals.push([OTV.length, "Other Marvel TV shows"]);
+    /* The summary box follows the selected button. */
+    function seasonsOf(list) { return list.reduce(function (n, s) { return n + s.seasons.length; }, 0); }
+    var totals;
+    if (groupKey === "all") {
+      totals = [[TV.length, "TV shows"], [seasonTotal, "seasons"]];
+      if (OTV.length) totals.push([OTV.length, "Other Marvel TV shows"]);
+    } else {
+      var shown = groupKey === "mcu" ? TV : otv;
+      totals = [[shown.length, "TV shows"], [seasonsOf(shown), "seasons"]];
+    }
+    var tvCounts = { all: TV.length + OTV.length, mcu: TV.length };
+    TV_GROUPS.forEach(function (g) {
+      if (g.group) tvCounts[g.key] = OTV.filter(function (s) { return s.group === g.group; }).length;
+    });
     app.replaceChildren.apply(app, [
       h("h1", { class: "sr-only" }, "TV Shows"),
+      h("div", { class: "search-filters movie-filters" }, groupRow("tv", tvCounts)),
       summaryBox("TV totals", totals)
     ].concat(sections, otherSections));
   }
@@ -1206,20 +1298,26 @@
     var chrono = watchOrder === "chronological";
     var units = sequence();
     var movieCount = units.filter(function (u) { return u.kind === "movie"; }).length;
-    var xmovies = xsequence();
-    var smovies = ssequence();
-    var omovies = osequence();
+    /* Only the selected group's section(s) are drawn */
+    if (!showsGroup("mcu")) { units = []; movieCount = 0; }
+    var xmovies = showsGroup("x-men") ? xsequence() : [];
+    var smovies = showsGroup("sony") ? ssequence() : [];
+    var omovies = otherFor(osequence());
+    var counts = { all: sequence().length + XMOVIES.length + SMOVIES.length + OMOVIES.length, mcu: sequence().length,
+      "x-men": XMOVIES.length, sony: SMOVIES.length, "fantastic-four": otherCount("fantastic-four"),
+      daredevil: otherCount("daredevil"), punisher: otherCount("punisher"), blade: otherCount("blade"), other: otherCount("other") };
 
     app.replaceChildren(
       pageHead("Timeline"),
-      h("p", { class: "section-note" },
+      h("div", { class: "search-filters movie-filters" }, groupRow("timeline", counts)),
+      units.length ? h("p", { class: "section-note" },
         (chrono ? "Every MCU movie and TV season in the order they happen on Marvel\u2019s official MCU timeline. "
                 : "Every MCU movie and TV season in the order they came out. ") +
         plural(units.length, "title", "titles") + ": " + plural(movieCount, "movie", "movies") + " and " +
-        plural(units.length - movieCount, "TV season", "TV seasons") + "."),
-      h("ol", { class: "tl-list" }, units.map(function (u) {
+        plural(units.length - movieCount, "TV season", "TV seasons") + ".") : null,
+      units.length ? h("ol", { class: "tl-list" }, units.map(function (u) {
         return u.kind === "movie" ? timelineRow(u.movie) : timelineRow(null, u.show, u.season);
-      })),
+      })) : null,
       xmovies.length ? h("h2", { class: "phase-title", style: "margin-top:36px" }, "X-Men Timeline") : null,
       xmovies.length ? h("p", { class: "section-note" },
         (chrono ? "Every X-Men movie in the order they happen in the X-Men story timeline. "
@@ -1534,6 +1632,8 @@
 
   var GUIDES = window.MCU_GUIDES || [];
   var guideId = null; // which guide is open on the Guides page
+  var guideCat = "all"; // the category button on the Guides page ("all" or a guide's `category` text)
+  var GUIDE_CATEGORIES = ["MCU", "X-Men", "Spider-Man", "Netflix & TV", "Other movies"]; // button order
 
   /* #/guides : pick a guide, see its steps as numbered cards (in the order typed in the data file) */
   function renderGuides() {
@@ -1541,12 +1641,26 @@
       app.replaceChildren(emptyBox("No guides yet", "Add some in js/data-guides.js."));
       return;
     }
-    if (!GUIDES.some(function (g) { return g.id === guideId; })) guideId = GUIDES[0].id;
+
+    /* Category buttons: All + the categories that at least one guide uses */
+    var catButtons = [{ key: "all", label: "All" }].concat(GUIDE_CATEGORIES.filter(function (c) {
+      return GUIDES.some(function (g) { return g.category === c; });
+    }).map(function (c) { return { key: c, label: c }; }));
+    if (!catButtons.some(function (c) { return c.key === guideCat; })) guideCat = "all";
+    var catRow = filterRow("Filter guides by category", catButtons,
+      function () { return guideCat; }, function (k) { guideCat = k; }, update);
 
     var host = h("div", { class: "guide-results" });
-    var row = filterRow("Choose a guide",
-      GUIDES.map(function (g) { return { key: g.id, label: g.title }; }),
-      function () { return guideId; }, function (k) { guideId = k; }, update);
+    var rowHost = h("div"); // holds the "Choose a guide" row, rebuilt when the category changes
+    var row;
+    function drawRow() {
+      var list = GUIDES.filter(function (g) { return guideCat === "all" || g.category === guideCat; });
+      if (!list.some(function (g) { return g.id === guideId; })) guideId = list[0].id; // the first guide of the category
+      row = filterRow("Choose a guide",
+        list.map(function (g) { return { key: g.id, label: g.title }; }),
+        function () { return guideId; }, function (k) { guideId = k; }, function () { row.refresh(); draw(); });
+      rowHost.replaceChildren(row.el);
+    }
 
     function draw() {
       var g = GUIDES.filter(function (x) { return x.id === guideId; })[0];
@@ -1562,11 +1676,11 @@
         steps.length ? list : emptyBox("This guide is empty", "Add ids to its items list in js/data-guides.js.")
       ].filter(Boolean));
     }
-    function update() { row.refresh(); draw(); }
+    function update() { catRow.refresh(); drawRow(); row.refresh(); draw(); }
 
     app.replaceChildren(
       h("h1", { class: "sr-only" }, "Watch guides"),
-      h("div", { class: "search-filters movie-filters" }, row.el),
+      h("div", { class: "search-filters movie-filters" }, catRow.el, rowHost),
       host);
     update();
   }
@@ -1739,10 +1853,16 @@
   var lastShowId = null; // so going Back to the TV list can refocus that show's card
 
   /* Addresses: #/dashboard  #/movies  #/tv  #/tv/<show-id>  #/tv/<show-id>/<season-number>  #/timeline  #/search
+                #/tv/<group> (netflix abc-hulu-freeform fox disney-plus animation kids-animation specials documentaries older-live-action older-animation mcu)
+                #/movies/<group>  #/timeline/<group>  (group = mcu x-men sony fantastic-four daredevil punisher blade other)
                 #/characters  #/characters/<character-id>  #/phases  #/phases/<number>  #/guides  #/stats */
   function parseHash() {
     var parts = window.location.hash.replace(/^#\/?/, "").split("/");
-    var out = { name: ROUTE_NAMES.indexOf(parts[0]) !== -1 ? parts[0] : "dashboard", showId: null, seasonNum: null, itemId: null };
+    var out = { name: ROUTE_NAMES.indexOf(parts[0]) !== -1 ? parts[0] : "dashboard", showId: null, seasonNum: null, itemId: null, group: "all" };
+    /* #/movies/<group> and #/timeline/<group> (unknown text = All) */
+    if ((out.name === "movies" || out.name === "timeline") && groupDef(parts[1])) out.group = parts[1];
+    /* #/tv/<group> (for example #/tv/netflix); anything else after #/tv/ is a show id */
+    if (out.name === "tv" && parts[1] && groupDef(parts[1], "tv")) { out.group = parts[1]; parts = ["tv"]; }
     if (out.name === "tv" && parts[1]) {
       try { out.showId = decodeURIComponent(parts[1]); } catch (e) { out.showId = parts[1]; }
       if (parts[2] && Number(parts[2]) > 0) out.seasonNum = Number(parts[2]);
@@ -1771,8 +1891,11 @@
   var TITLES = { dashboard: "Command Center", movies: "Movies", timeline: "Timeline", search: "Search", tv: "TV Shows",
                  characters: "Characters", phases: "Phases", guides: "Guides", stats: "Stats" };
 
+  var lastPage = null; // the page we were on before this route() call
+
   function route() {
     var r = parseHash();
+    groupKey = r.group; // no group in the address = All, so coming back from another page starts on All
     closeModal();
 
     var orderPicker = document.querySelector(".order-picker");
@@ -1814,7 +1937,9 @@
     if (r.name === "search") { searchType = "all"; searchPhase = "all"; }
 
     renderRoute();
-    window.scrollTo(0, 0);
+    /* Picking a group button stays on the same page, so keep the scroll position there */
+    if (!((r.name === "movies" || r.name === "timeline" || r.name === "tv") && !r.showId && lastPage === r.name)) window.scrollTo(0, 0);
+    lastPage = r.name;
 
     if (show) {
       lastShowId = show.id;
@@ -1905,6 +2030,19 @@
     btn.addEventListener("click", function () { apply(current() === "light" ? "dark" : "light", true); });
   }
   initThemeToggle();
+
+  /* "Back to top" floating button: shows after scrolling down, on every page except the home dashboard. */
+  (function initBackToTop() {
+    var btn = h("button", { type: "button", class: "to-top", "aria-label": "Back to top", title: "Back to top", hidden: "" }, "\u2191");
+    document.body.appendChild(btn);
+    function check() { btn.hidden = !(window.scrollY > 600 && parseHash().name !== "dashboard"); }
+    window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("hashchange", check);
+    btn.addEventListener("click", function () {
+      var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: 0, behavior: calm ? "auto" : "smooth" });
+    });
+  })();
 
   window.addEventListener("hashchange", route);
   route();

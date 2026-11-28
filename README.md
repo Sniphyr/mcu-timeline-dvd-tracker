@@ -293,6 +293,28 @@ To remove the tags completely, delete the `importance` field from your data, or 
 
 ---
 
+## Group buttons (Movies and Timeline pages)
+
+A row of group buttons sits at the top of the Movies and Timeline pages: **All, MCU, X-Men, Sony Spider-Man, Fantastic Four (Fox), Daredevil, Elektra & Ghost Rider, The Punisher, Blade, Other Marvel films**. Each shows its count, e.g. "MCU (38)" (on the Timeline the MCU count includes TV seasons, because they are shown there too).
+
+- Click a button to show only that group. **All** shows everything. The chosen button is highlighted.
+- On the Movies page the phase / importance / sort rows apply to the chosen group. The phase row only appears for All, MCU and X-Men (X-Men shows its story eras). The Release / Chronological menu works with every button, and the chosen group stays when you change it.
+- Every group has an address, so you can link to it and the Back button works: `#/movies/mcu`, `#/movies/x-men`, `#/movies/sony`, `#/movies/fantastic-four`, `#/movies/daredevil`, `#/movies/punisher`, `#/movies/blade`, `#/movies/other`. The same words work after `#/timeline/`.
+- Coming back from another page always starts on **All**.
+- To add or rename a button, edit the `GROUPS` list in `js/app.js` (Ctrl+F `GROUPS`). For the Other Marvel buttons, `other:` must match the `group:` text in `js/data-movies-other.js`.
+
+**Back to top:** a small round button appears at the bottom right after you scroll down (every page except the home dashboard). Its code is `initBackToTop` in `js/app.js` and `.to-top` in `css/styles.css`.
+
+---
+
+## TV page group buttons
+
+The TV Shows page has the same kind of group buttons as the Movies page: **All, MCU, Netflix / Defenders, ABC, Hulu & Freeform, Fox, Disney+, Animation (Disney+ & Hulu), Kids & Disney XD animation, Specials, Documentaries & behind the scenes, Older live-action & TV films, Older animation**, each with its show count. **MCU** = the shows in `js/data-tv.js`; every other button = the shows in `js/data-tv-other.js` with that `group` text. Only the chosen group is shown, and the summary box at the top counts just that group. The Release / Chronological menu keeps working (it reorders the MCU shows).
+
+Links: `#/tv/mcu`, `#/tv/netflix`, `#/tv/abc-hulu-freeform`, `#/tv/fox`, `#/tv/disney-plus`, `#/tv/animation`, `#/tv/kids-animation`, `#/tv/specials`, `#/tv/documentaries`, `#/tv/older-live-action`, `#/tv/older-animation`. Back works, and the page starts on All when you arrive from another page. To add or rename a button, edit `TV_GROUPS` in `js/app.js`. A show whose `group` has no button is still shown under **All**.
+
+---
+
 ## Movies page: filter and sort
 
 At the top of the Movies page there are three rows of buttons:
@@ -306,7 +328,7 @@ How they work together:
 - Click a button to switch it on. The phase and importance rows combine (for example Phase 3 + Essential shows only the essential Phase 3 movies). Click **All phases** / **All importance** to clear one.
 - **Watch order** sort follows the **Watch order** menu at the top of the page (Release or Chronological), exactly as before.
 - **Newest first / Oldest first** sorts by release year. Movies from the same year stay in the order of the Watch order menu, so the menu still matters. Switch back to *Watch order* to get the phase sections again.
-- **X-Men movies:** the phase buttons are MCU phases, so X-Men movies are hidden while a phase is picked. The importance and sort buttons work on them as normal.
+- **X-Men movies:** on the **All** button the phase buttons are MCU phases, so X-Men movies are hidden while a phase is picked (on the **X-Men** group button the row shows the X-Men eras instead). The importance and sort buttons work on them as normal.
 - The buttons keep their setting while you move around the site. Reload the page to reset them.
 
 The code for this is in `js/app.js`, in `function renderMovies` (it is commented step by step).
@@ -432,7 +454,7 @@ Delete its block, from the `{ id:` line to its `},`. Also delete its picture fro
 
 ## Guides page
 
-**What it does:** preset watch paths, such as "Quick MCU recap (essential only)", "Loki path" and "Spider-Man path". Pick a guide with the buttons. It shows the guide as **numbered cards, in the order written in the file**. The Watch order menu does not change a guide, because the guide *is* the order.
+**What it does:** preset watch paths, such as "Quick MCU recap (essential only)", "Loki path" and "Spider-Man path". Pick a category (All, MCU, X-Men, Spider-Man, Netflix & TV, Other movies), then pick a guide from the buttons below it. Guides now cover every movie group: X-Men (release and story order, Wolverine, Deadpool), Sony Spider-Man (Raimi, Amazing, Venom, Spider-Verse, every Spider-Man movie), Fantastic Four, Hulk, Ghost Rider, Blade, Punisher, Daredevil, Elektra, Netflix Defenders, Agents of S.H.I.E.L.D., Marvel One-Shots and every Fox movie. It shows the guide as **numbered cards, in the order written in the file**. The Watch order menu does not change a guide, because the guide *is* the order.
 
 Guides live in `js/data-guides.js`. The file starts with a guide.
 
@@ -443,7 +465,7 @@ Guides live in `js/data-guides.js`. The file starts with a guide.
 3. Paste this **just above** it and change the text:
 
 ```js
-  { id: "my-guide", title: "My guide",
+  { id: "my-guide", title: "My guide", category: "MCU",
     description: "One sentence about this path.",
     items: ["iron-man", "the-avengers", "loki-s1"] },
 ```
@@ -452,6 +474,7 @@ Guides live in `js/data-guides.js`. The file starts with a guide.
 |---|---|
 | `id` | Lowercase, dashes, unique |
 | `title` | The button label and the heading |
+| `category` | Optional: `MCU`, `X-Men`, `Spider-Man`, `Netflix & TV` or `Other movies`. It puts the guide under that category button. Without it the guide only shows under **All**. `js/check-data.js` warns about any other word. To add a new category, add it to `GUIDE_CATEGORIES` in `js/app.js` and to the list in `js/check-data.js` |
 | `description` | One sentence under the heading |
 | `items` | Ids in **watching order**: a movie id, a show id, or a season id (same as the appearances list above) |
 
