@@ -24,7 +24,7 @@
     To change what the home page says, open js/app.js and search for:
       My Marvel Tracker
     To change movies / TV shows, edit the files in the js folder:
-      data-movies.js, data-movies-xmen.js, data-movies-sony.js, data-movies-other.js, data-tv.js
+      data-movies.js, data-movies-xmen.js, data-movies-sony.js, data-movies-other.js, data-tv.js, data-tv-other.js
       data-characters.js, data-phases.js, data-guides.js
       data-featured.js = which titles rotate in the home page banner
       (each has a QUICK GUIDE at the top)
@@ -47,12 +47,25 @@
       <a class="tab" href="#/dashboard" data-route="dashboard">Dashboard</a>
       <a class="tab" href="#/movies" data-route="movies">Movies <span class="tab-count" id="tab-count-movies"></span></a>
       <a class="tab" href="#/tv" data-route="tv">TV Shows <span class="tab-count" id="tab-count-tv"></span></a>
-      <a class="tab" href="#/characters" data-route="characters">Characters</a>
-      <a class="tab" href="#/phases" data-route="phases">Phases</a>
-      <a class="tab" href="#/guides" data-route="guides">Guides</a>
+      <!-- Phones only: these three are inside the "Explore" menu on a desktop -->
+      <a class="tab tab-phone" href="#/characters" data-route="characters">Characters</a>
+      <a class="tab tab-phone" href="#/phases" data-route="phases">Phases</a>
+      <a class="tab tab-phone" href="#/guides" data-route="guides">Guides</a>
       <a class="tab" href="#/timeline" data-route="timeline">Timeline</a>
-      <a class="tab" href="#/stats" data-route="stats">Stats</a>
+      <a class="tab tab-phone" href="#/stats" data-route="stats">Stats</a>
       <a class="tab" href="#/search" data-route="search">Search</a>
+
+      <!-- Desktop only: the "Explore" dropdown. To move a page in or out of it,
+           move its link between here and the main tabs (and keep the phone copy above in sync). -->
+      <div class="explore">
+        <button class="tab explore-btn" id="explore-btn" type="button" aria-expanded="false" aria-controls="explore-menu">Explore <span aria-hidden="true">&#9662;</span></button>
+        <div class="explore-menu" id="explore-menu" hidden>
+          <a class="explore-link" href="#/characters" data-route="characters">Characters</a>
+          <a class="explore-link" href="#/phases" data-route="phases">Phases</a>
+          <a class="explore-link" href="#/guides" data-route="guides">Guides</a>
+          <a class="explore-link" href="#/stats" data-route="stats">Stats</a>
+        </div>
+      </div>
     </nav>
 
     <!-- Light / dark theme button (see "initThemeToggle" in js/app.js) -->
@@ -98,12 +111,13 @@
        js/check-data.js = optional: warns in the Console if a data file has a mistake
        js/app.js     = draws all the pages
        data-characters.js, data-phases.js, data-guides.js = the Characters, Phases and Guides pages
-       To remove all X-Men movies, delete the data-movies-xmen.js line (same for data-movies-sony.js and data-movies-other.js). -->
+       To remove all X-Men movies, delete the data-movies-xmen.js line (same for data-movies-sony.js, data-movies-other.js and data-tv-other.js). -->
   <script src="js/data-movies.js"></script>
   <script src="js/data-movies-xmen.js"></script>
   <script src="js/data-movies-sony.js"></script>
   <script src="js/data-movies-other.js"></script>
   <script src="js/data-tv.js"></script>
+  <script src="js/data-tv-other.js"></script>
   <script src="js/data-characters.js"></script>
   <script src="js/data-phases.js"></script>
   <script src="js/data-guides.js"></script>

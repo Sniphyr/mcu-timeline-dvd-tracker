@@ -16,6 +16,7 @@ It lists every Marvel movie and TV show, with posters, dates, a timeline and sea
 | `js/data-movies-sony.js` | The Sony Spider-Man movies (Raimi, Amazing, Venom/SSU, Spider-Verse) | **Yes, to add/remove Sony movies** |
 | `js/data-movies-other.js` | Other Marvel movies (Fantastic Four, Daredevil, Punisher, Blade, Hulk 2003, Marvel One-Shots...) | **Yes, to add/remove these movies** |
 | `js/data-tv.js` | The TV shows | **Yes, to add/remove shows** |
+| `js/data-tv-other.js` | Other Marvel TV (live-action shows not on the MCU timeline: Netflix, ABC / Hulu / Freeform, Fox, Disney+ extras) | **Yes, to add/remove these shows** |
 | `js/data-characters.js` | The Characters page (name, description, appearances) | **Yes, to add/remove characters** |
 | `js/data-phases.js` | The story summary text for each phase | **Yes, to change the Phases page text** |
 | `js/data-guides.js` | The watch guides (preset watch paths) | **Yes, to add/remove guides** |
@@ -312,14 +313,19 @@ The code for this is in `js/app.js`, in `function renderMovies` (it is commented
 
 ---
 
-## "Surprise me" buttons (home page)
+## "Roll the dice" panel (home page)
 
-The home page has two buttons under the main buttons:
+Under the four big tiles there is one glowing "Roll the dice" panel with two big buttons and a row of mood chips above them.
 
-- **Surprise me, random movie:** opens the popup of a random movie (MCU and X-Men movies).
-- **Surprise me, random TV show:** opens the page of a random TV show.
+- **Random movie:** opens the popup of a random movie (MCU, X-Men, Sony / Spider-Man and Other Marvel movies). The popup has a **Roll again** button at the top while it was opened from this panel (it is hidden if you move with the arrows or open a related movie).
+- **Random TV show:** opens the page of a random show (MCU and Other Marvel shows).
+- **Chips** (one on at a time): Any, Essential only, Under 2 hours, MCU only, X-Men only, Spider-Man/Sony only, Other Marvel only, Ongoing only. After you roll a movie, the chips that only fit TV ("Ongoing only") are greyed out; after a TV roll, the movie-only chips (Under 2 hours, X-Men, Sony) are greyed out. If the chip that is on does not fit the button you press, it goes back to "Any".
+- If nothing matches, the panel says "No match, try another chip."
+- A roll never gives the same title twice in a row (unless only one title matches).
 
-Click again for another pick (it will not give you the same title twice in a row). To pick from **MCU movies only**, open `js/app.js`, search for `function surpriseButtons` and change `ALL_MOVIES` to `MOVIES` in the two places inside it. To remove either button, delete its `buttons.push(...)` line in that function.
+How the chips decide: Essential = the `importance` field; Under 2 hours = `runtime` under 120 (movies with no runtime are skipped); X-Men / Sony / Other = the `universe` field; MCU and Other Marvel for TV = which file the show is in (`data-tv.js` or `data-tv-other.js`); Ongoing = the show's `status`.
+
+The code is in `js/app.js`: search for `ROLL_CHIPS` (the chip list, add or remove a chip with one line) and `function rollPanel`. The look is in `css/styles.css`, search for `Roll the dice`. To remove the panel, delete the `rollPanel()` line in `renderDashboard`.
 
 ---
 
@@ -327,17 +333,19 @@ Click again for another pick (it will not give you the same title twice in a row
 
 | Tab | What it shows |
 |---|---|
-| Dashboard | Home page: banner, big buttons and the "Surprise me" buttons |
+| Dashboard | Home page: banner, four big tiles (Characters, Phases, Guides, Stats) and the "Roll the dice" panel |
 | Movies | All movies, with phase / importance filters and sort |
 | TV Shows | All shows and seasons |
-| Characters | A card for every character, click one to see where they appear |
-| Phases | One big card per phase |
-| Guides | Preset watch paths |
+| Characters (Explore) | A card for every character, click one to see where they appear |
+| Phases (Explore) | One big card per phase |
+| Guides (Explore) | Preset watch paths |
 | Timeline | The full story timeline |
-| Stats | Charts and totals |
+| Stats (Explore) | Charts and totals |
 | Search | Search everything |
 
-To hide a tab, delete its `<a class="tab" ...>` line in `index.html` (the page still works by address). The same pages are also on the home page buttons, in `js/app.js` (search for `homeCard(`).
+**On a desktop** the tabs are Dashboard, Movies, TV Shows, Timeline and Search, plus an **Explore ▾** dropdown with Characters, Phases, Guides and Stats. Click Explore to open it; it closes when you click elsewhere or press Esc. With the keyboard, Tab to Explore, press Enter or Down arrow, use Up / Down to move and Enter to open a page. Explore lights up when one of its pages is open.
+**On a phone** (screens up to 1080 px wide) there is no dropdown: all tabs are in one row you swipe sideways. A faded edge on the right shows there is more (it disappears at the end), and the current tab scrolls into view.
+To hide a page, delete its link in `index.html`: in the main tabs (`<a class="tab" ...>`), and for the four Explore pages also the matching phone copy (`class="tab tab-phone"`) and the link inside `class="explore-menu"`. The page still works by address. To move a page into or out of Explore, move its link and keep the phone copy in step. The Characters, Phases, Guides and Stats pages also have tiles on the home page (`homeCard(` in `js/app.js`).
 
 The **Watch order** menu is hidden on pages where it changes nothing (home, Guides, Stats, and the Characters and Phases lists).
 
@@ -513,7 +521,7 @@ window.MCU_FEATURED = [
 
 Tested at **390 px wide** (a normal phone) in a real browser: no sideways scrolling on any page, and everything you tap is at least about 44 px tall.
 
-- **Top bar:** the logo and the theme button are on the first row, and the tabs are on their own row that **scrolls sideways**. The current tab scrolls into view by itself.
+- **Top bar:** the logo and the theme button are on the first row, and the tabs are on their own row that **scrolls sideways**, with a faded right edge as a hint. The current tab scrolls into view by itself.
 - **Bigger touch areas:** tabs, filter buttons, the Watch order menu, the search box, popup buttons, related-title buttons and home buttons are all bigger on touch screens.
 - **Popup:** on a phone the popup rises from the bottom like a sheet, fits the screen height, and scrolls inside itself. The close button stays at the top while you scroll, and **Previous / Next** stay at the bottom. Tap the dark area above the popup to close it.
 - **Swipe in the popup:** swipe **left** for the next movie and **right** for the previous one (it follows the Watch order menu, same as the Previous / Next buttons). Scrolling up and down never counts as a swipe, and short or slow drags are ignored. A small "Swipe" hint shows on touch screens only.
@@ -523,13 +531,21 @@ Tested at **390 px wide** (a normal phone) in a real browser: no sideways scroll
 
 ## Other jobs
 
+**Other Marvel TV (`js/data-tv-other.js`):** these shows have no phases and are not in the MCU Timeline. They appear at the bottom of the TV Shows page, in a section per `group`, and in Search and on their own show pages. To add one, copy a block from the file and set: a new `id` (season ids are `<show-id>-s1`, `-s2`...), `group` (same text = same section; sections and shows are sorted by earliest release date), `category`, `importance`, `poster`, `description`, optional `creator`, `cast`, `status`, and one entry per season with `id`, `season`, `releaseDate`, `episodeCount` and `episodes: []`. A season does not need `phase`, `releaseOrder` or `chronologicalOrder`. `show.poster` is the season 1 poster; give later seasons their own `poster` path. Poster files go in `posters/tv/` (a placeholder shows if the file is missing). `agent-carter` style ids must not match a movie id (the one-shot is `agent-carter-one-shot`).
+
+What is in `js/data-tv-other.js` now: the live-action Netflix / ABC / Hulu / Freeform / Fox / Disney+ shows, the animated shows (Disney+ and Hulu animation, Disney XD and Disney Jr. cartoons), the specials (Guardians Holiday Special, LEGO Marvel Avengers) and the documentaries (616, Hero Project, Behind the Mask, Stan Lee, Assembled, Legends, Voices Rising, MPower). MCU-timeline shows (What If...?, X-Men '97, Werewolf by Night, Ms. Marvel, She-Hulk, Secret Invasion) are in `js/data-tv.js` with a `phase` and order numbers like the other MCU shows. **Older and extra shows (added in batch 10):** two new groups, "Older live-action & TV films" (The Incredible Hulk 1977, The Amazing Spider-Man 1977, Generation X 1996, Nick Fury: Agent of S.H.I.E.L.D. 1998, Blade: The Series) and "Older animation (1990s-2000s)" (Spider-Man 1994, X-Men: The Animated Series, X-Men: Evolution, Wolverine and the X-Men), plus Ultimate Spider-Man and Hulk and the Agents of S.M.A.S.H. in "Kids & Disney XD animation". Their posters are not added yet, so a placeholder shows; the file names to add in `posters/tv/` are listed in `posters/tv/POSTERS-TO-ADD.txt`. The two 1970s shows' pilot movies are not counted as seasons. Ids end in the year where a movie or other show already uses the name (`the-incredible-hulk-1977`). A season that is not out yet (for example Daredevil: Born Again S3, Your Friendly Neighborhood Spider-Man S2) uses its announced or expected date; change it when the real date is known.
+
+**Poster check:** every file in `posters/tv/` is used by a show. To re-check after you add or remove shows, make sure each `posters/tv/<name>.webp` in the files appears as a `poster:` path in `js/data-tv.js` or `js/data-tv-other.js`.
+
+**Remove all Other Marvel TV:** in `index.html`, delete the line `<script src="js/data-tv-other.js"></script>`.
+
 **Remove all Other Marvel movies:** in `index.html`, delete the line `<script src="js/data-movies-other.js"></script>`.
 
 **Remove all Sony Spider-Man movies:** in `index.html`, delete the line `<script src="js/data-movies-sony.js"></script>`.
 
 **Remove all X-Men movies:** in `index.html`, delete the line `<script src="js/data-movies-xmen.js"></script>`.
 
-**Change the home page text or buttons:** (the banner is explained in "Look and feel" above) open `js/app.js`, Ctrl+F `My Marvel Tracker`. The big home buttons are the `homeCard(...)` lines just below. Delete a line to remove a button. The "Surprise me" buttons are described in their own section above.
+**Change the home page text or buttons:** (the banner is explained in "Look and feel" above) open `js/app.js`, Ctrl+F `My Marvel Tracker`. The four big home tiles are the `homeCard(...)` lines just below (link, emoji, name, one-line description). Delete a line to remove a tile. Movies, TV Shows, Timeline and Search have no tile because they are tabs in the top bar. The "Roll the dice" panel is described in its own section above.
 
 **Remove a top-bar tab** (e.g. Timeline): in `index.html`, delete its `<a class="tab" ...>` line. Keep Dashboard.
 
